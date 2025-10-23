@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="lv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Skeneru Salīdzinājums: Leica vs Faro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9; /* bg-slate-100 */
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        
+        /* Jaunais, modernais cilnes stils */
+        .tab-btn {
+            padding: 0.75rem 1.25rem;
+            font-weight: 600;
+            border-radius: 0.5rem; /* rounded-lg */
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background-color: #e2e8f0; /* bg-slate-200 */
+            color: #475569; /* text-slate-600 */
+        }
+        .tab-btn:hover {
+            background-color: #cbd5e1; /* bg-slate-300 */
+        }
+        .tab-btn.active {
+            background-color: #ffffff; /* bg-white */
+            color: #4f46e5; /* text-indigo-600 */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px; 
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <!-- Chosen Palette: Slate Background, White Cards, Indigo Accents, Red/Blue for brands -->
+    <!-- Application Structure Plan: Pārveidota SPA ar četrām loģiskām cilnēm: (1) Parametri, (2) Izturība, (3) Darbplūsma (galvenā atšķirība), (4) Cena. Šī struktūra nodrošina skaidru informācijas plūsmu. AI noņemts. Pievienots moderns dizains. -->
+    <!-- Visualization & Content Choices: (1) Cenas -> Stabiņu diagramma (Chart.js) -> Atjauninātas cenas. (2) Tehniskie dati & Izturība -> HTML Tīkla tabulas -> Pievienoti ikonas un dati no PDF/meklēšanas par temperatūrām un IP. (3) Darbplūsma -> 2-kolonnu teksts -> Paplašināts, lai uzsvērtu VIS priekšrocības. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. NO AI functionality. -->
+
+    <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+
+        <header class="text-center mb-12 p-8 bg-gradient-to-r from-indigo-700 to-indigo-500 rounded-xl shadow-lg">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-white mb-2">3D Lāzerskeneru Analīze</h1>
+            <p class="text-xl md:text-2xl text-indigo-100">Leica RTC360 vs. Faro Focus Core</p>
+        </header>
+
+        <section class="bg-white shadow-xl rounded-xl p-6 sm:p-8 mb-10">
+            <h2 class="text-3xl font-bold text-slate-800 mb-4">Ievads</h2>
+            <p class="text-slate-600 leading-relaxed text-lg">
+                Šī analīze apskata divus vadošos 3D lāzerskenerus vidējā segmentā: Leica RTC360 un Faro Focus Core. Abi instrumenti ir paredzēti ātrai un precīzai realitātes tveršanai, taču tiem piemīt fundamentāli atšķirīgas tehnoloģiskās pieejas, kas ietekmē gan lauka darbus, gan biroja apstrādi. Mērķis ir sniegt visaptverošu pārskatu par galvenajām specifikācijām, darbplūsmas atšķirībām un izmaksu struktūru.
+            </p>
+        </section>
+
+        <section class="bg-white shadow-xl rounded-xl overflow-hidden">
+            <div class="p-6 sm:p-8">
+                <nav class="flex flex-wrap justify-center gap-4 mb-8" aria-label="Tabs">
+                    <button class="tab-btn active" data-tab-target="params">Galvenie Parametri</button>
+                    <button class="tab-btn" data-tab-target="durability">Klimats un Izturība</button>
+                    <button class="tab-btn" data-tab-target="workflow">Darbplūsma</button>
+                    <button class="tab-btn" data-tab-target="pricing">Cenu Analīze</button>
+                </nav>
+
+                <div>
+                    <div id="params" class="tab-content active">
+                        <h3 class="text-2xl font-semibold text-indigo-700 mb-6 text-center">Tehnisko Parametru Pārskats</h3>
+                        <div class="overflow-x-auto">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+                                <div class="font-semibold text-slate-600 p-4 rounded-lg bg-slate-100 flex items-center justify-center md:justify-start">Parametrs</div>
+                                <div class="font-bold text-lg text-red-600 p-4 rounded-lg bg-red-50 text-center">Leica RTC360</div>
+                                <div class="font-bold text-lg text-blue-600 p-4 rounded-lg bg-blue-50 text-center">Faro Focus Core</div>
+
+                                <div class="font-semibold text-slate-600 p-4 rounded-lg bg-slate-100 flex items-center">⚡ Mērīšanas Ātrums</div>
+                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center"><strong>Līdz 2,000,000 punkti/sek.</strong></div>
+                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center"><strong>Līdz 976,000 punkti/sek.</strong></div>
+
+                                <div class="font-semibold text-slate-600 p-4 rounded-lg bg-slate-100 flex items-center">📏 Diapazons (Attālums)</div>
+                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center"><strong>0.5m - 130m</strong></div>
+                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center">0.5m - 70m (līdz 100m)</div>
+
+                                <div class="font-semibold text-slate-600 p-4 rounded-lg bg-slate-100 flex items-center">🎯 3D Punkta Precizitāte</div>
+                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center"><strong>1.9 mm @ 10m</strong></div>
+                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center">2 mm @ 10m</div>
+
+                                <div class="font-semibold text-slate-600 p-4 rounded-lg bg-slate-100 flex items-center">⚖️ Svars</div>
+                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center">5.35 kg (bez akum.)</div>
+                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center"><strong>4.4 kg (ar akumulatoru)</strong></div>
+                                
+                                <div class="font-semibold text-slate-600 p-4 rounded-lg bg-slate-100 flex items-center">🖼️ HDR Attēli</div>
+                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center">Jā (5 kronšteinu HDR)</div>
+                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center">Jā (3 kronšteinu HDR)</div>
+                                
+                                <div class="font-semibold text-slate-600 p-4 rounded-lg bg-slate-100 flex items-center">🔄 Lauka Reģistrācija</div>
+                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center"><strong>Automātiska ar VIS</strong></div>
+                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center">Ar papildu programmatūru</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="durability" class="tab-content">
+                        <h3 class="text-2xl font-semibold text-indigo-700 mb-6 text-center">Klimats un Vides Izturība</h3>
+                        <p class="text-slate-600 mb-8 max-w-3xl mx-auto text-center">
+                            Abu skeneru izturība ir līdzīga, taču ar dažām būtiskām atšķirībām darbības temperatūrās, kas var ietekmēt darbu ekstremālākos apstākļos.
+                        </p>
+                        <div class="overflow-x-auto">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+                                <div class="font-semibold text-slate-600 p-4 rounded-lg bg-slate-100 flex items-center justify-center md:justify-start">Parametrs</div>
+                                <div class="font-bold text-lg text-red-600 p-4 rounded-lg bg-red-50 text-center">Leica RTC360</div>
+                                <div class="font-bold text-lg text-blue-600 p-4 rounded-lg bg-blue-50 text-center">Faro Focus Core</div>
+
+                                <div class="font-semibold text-slate-600 p-4 rounded-lg bg-slate-100 flex items-center">🛡️ Aizsardzības Klase</div>
+                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center"><strong>IP54</strong> (aizsardzība pret putekļiem un ūdens šļakatām)</div>
+                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center"><strong>IP54</strong> (aizsardzība pret putekļiem un ūdens šļakatām)</div>
+
+                                <div class="font-semibold text-slate-600 p-4 rounded-lg bg-slate-100 flex items-center">🌡️ Darbības Temperatūra</div>
+                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center"><strong>-5°C līdz +40°C</strong></div>
+                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center">+5°C līdz +40°C (Standarta)</div>
+
+                                <div class="font-semibold text-slate-600 p-4 rounded-lg bg-slate-100 flex items-center">🌡️ Paplašināta Temperatūra</div>
+                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center">Nav norādīts (bāzes -5°C)</div>
+                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center">-10°C līdz +55°C (ar ierobežojumiem*)</div>
+
+                                <div class="font-semibold text-slate-600 p-4 rounded-lg bg-slate-100 flex items-center">📦 Uzglabāšanas Temperatūra</div>
+                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center"><strong>-40°C līdz +70°C</strong></div>
+                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center">-10°C līdz +60°C</div>
+                            </div>
+                        </div>
+                        <p class="text-sm text-slate-500 mt-6 max-w-5xl mx-auto">
+                            * Faro norāda, ka darbībai zemā temperatūrā skeneris jāieslēdz, kad tā iekšējā temperatūra ir virs +15°C, un darbam augstā temperatūrā (virs 40°C) var būt nepieciešams papildu termālais pārsegs. Leica RTC360 bāzes darbības diapazons ir plašāks aukstā laikā (-5°C).
+                        </p>
+                    </div>
+
+                    <div id="workflow" class="tab-content">
+                        <h3 class="text-2xl font-semibold text-indigo-700 mb-6 text-center">Darbplūsma: Reāllaiks pret Pēcapstrādi</h3>
+                        <p class="text-slate-600 mb-8 max-w-3xl mx-auto text-center">
+                            Šis ir vissvarīgākais atšķirības punkts. Leica RTC360 ir veidots ap automatizētu reāllaika darbplūsmu, savukārt Faro Focus Core paļaujas uz tradicionālāku pieeju ar pēcapstrādi birojā.
+                        </p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div class="bg-slate-50 p-6 rounded-lg border-l-4 border-red-500 shadow-md">
+                                <h4 class="text-xl font-bold text-red-600 mb-4">Leica RTC360: "Skenē un Skaties"</h4>
+                                <p class="text-slate-700 mb-4">
+                                    Leica unikālā priekšrocība ir <strong>Vizuālā Inerciālā Sistēma (VIS)</strong>, kas automātiski nosaka skenera pārvietojumu starp pozīcijām, reģistrējot datus reāllaikā.
+                                </p>
+                                <ul class="list-disc list-inside space-y-3 text-slate-600">
+                                    <li><strong>Automātiska reģistrācija:</strong> Skenējumi tiek automātiski savietoti planšetdatorā (ar Cyclone FIELD 360) jau lauka apstākļos.</li>
+                                    <li><strong>Tūlītēja kvalitātes kontrole:</strong> Operators uzreiz redz gatavu, savietotu punktu mākoni un var nekavējoties identificēt trūkstošos datus.</li>
+                                    <li><strong>Milzīgs laika ietaupījums:</strong> Darbs birojā tiek samazināts līdz minimumam. Ierodoties birojā, punktu mākonis ir praktiski gatavs eksportēšanai.</li>
+                                    <li><strong>Produktivitāte:</strong> 4x lielāks skenēšanas ātrums (2M punkti/sek) apvienojumā ar VIS tehnoloģiju nozīmē, ka objektu var pabeigt daudz ātrāk.</li>
+                                </ul>
+                            </div>
+                            <div class="bg-slate-50 p-6 rounded-lg border-l-4 border-blue-500 shadow-md">
+                                <h4 class="text-xl font-bold text-blue-600 mb-4">Faro Focus Core: "Skenē un Apstrādā"</h4>
+                                <p class="text-slate-700 mb-4">
+                                    Focus Core ir uzticams un viegls skeneris datu vākšanai, kas pamatā tiek apstrādāti birojā, izmantojot jaudīgo SCENE programmatūru.
+                                </p>
+                                <ul class="list-disc list-inside space-y-3 text-slate-600">
+                                    <li><strong>Datu vākšana uz vietas:</strong> Instruments ātri savāc 3D datus katrā pozīcijā. Tas ir vieglāks, kas var būt priekšrocība grūti pieejamās vietās.</li>
+                                    <li><strong>Pēcapstrāde birojā:</strong> Dati tiek importēti FARO SCENE programmā, kur notiek reģistrācija (savietošana), izmantojot mērķus vai "cloud-to-cloud" algoritmus.</li>
+                                    <li><strong>SCENE programmatūra:</strong> Iekļautā mūža licence ir ļoti spēcīgs rīks datu apstrādei, tīrīšanai un analīzei birojā.</li>
+                                    <li><strong>Papildu iespējas (Maksas):</strong> Lai iegūtu lauka reģistrācijai līdzīgu funkcionalitāti, ir nepieciešams iegādāties papildu abonementu FARO Stream lietotnei.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="pricing" class="tab-content">
+                        <h3 class="text-2xl font-semibold text-indigo-700 mb-6 text-center">Cenu un Vērtības Analīze</h3>
+                        <p class="text-slate-600 mb-8 max-w-3xl mx-auto text-center">
+                            Aplūkojot atjauninātos piedāvājumus, cenu atšķirība ir aptuveni 12,700 €. Novērtējot kopējās investīcijas (TCO), ir kritiski svarīgi ņemt vērā laika ietaupījumu un produktivitātes pieaugumu, ko nodrošina Leica RTC360 reāllaika reģistrācijas tehnoloģija.
+                        </p>
+                        <div class="chart-container mb-8">
+                            <canvas id="priceChart"></canvas>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+                            <div class="bg-blue-50 border border-blue-200 p-6 rounded-lg shadow-lg">
+                                <h4 class="text-xl font-bold text-blue-700 mb-3">Faro Focus Core Pakotne</h4>
+                                <p class="text-3xl font-bold text-blue-600 mb-3">56,857 € <span class="text-sm font-normal text-slate-600">(bez PVN)</span></p>
+                                <ul class="list-disc list-inside space-y-1 text-slate-600">
+                                    <li>Focus Core 3D skeneris</li>
+                                    <li>Statīvs un piederumi</li>
+                                    <li>FARO SCENE mūža licence</li>
+                                </ul>
+                            </div>
+                            <div class="bg-red-50 border border-red-200 p-6 rounded-lg shadow-lg">
+                                <h4 class="text-xl font-bold text-red-700 mb-3">Leica RTC360 Pakotne</h4>
+                                <p class="text-3xl font-bold text-red-600 mb-3">69,629 € <span class="text-sm font-normal text-slate-600">(bez PVN)</span></p>
+                                <ul class="list-disc list-inside space-y-1 text-slate-600">
+                                    <li>RTC360 skeneris ar VIS</li>
+                                    <li>Statīvs, akumulatori, kaste</li>
+                                    <li>Cyclone REGISTER 360 mūža licence</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-10">
+            <section class="bg-white shadow-xl rounded-xl p-8">
+                <h2 class="text-3xl font-bold text-slate-800 mb-4">Konkurentu Konteksts</h2>
+                <div class="bg-slate-50 p-6 rounded-lg border border-slate-200">
+                    <h4 class="text-xl font-bold text-gray-700 mb-3">Trimble X12</h4>
+                    <p class="text-slate-600 leading-relaxed">
+                        Kā vēl viens nozīmīgs spēlētājs augstākās klases skeneru tirgū ir jāpiemin Trimble X12. Šis instruments ir pazīstams ar savu augsto precizitāti un liela attāluma skenēšanas spējām (līdz 365m), konkurējot gan ar Leica, gan Faro augstākā līmeņa modeļiem. Tas piedāvā savas lauka reģistrācijas programmatūras (Trimble Perspective) un jaudīgu biroja programmatūru (Trimble RealWorks), pozicionējot sevi kā visaptverošu risinājumu sarežģītiem mērniecības un būvniecības projektiem.
+                    </p>
+                </div>
+            </section>
+            
+            <section class="bg-white shadow-xl rounded-xl p-8">
+                <h2 class="text-3xl font-bold text-slate-800 mb-4">Secinājums: Kurš ir piemērotāks?</h2>
+                <p class="text-slate-600 leading-relaxed mb-4">
+                    Izvēle starp Leica RTC360 un Faro Focus Core ir stratēģisks lēmums, kas atkarīgs no jūsu uzņēmuma prioritātēm.
+                </p>
+                
+                <h4 class="text-xl font-semibold text-blue-700 mb-2">Izvēlieties Faro Focus Core, ja:</h4>
+                <ul class="list-disc list-inside space-y-2 text-slate-600 pl-4 mb-6">
+                    <li>Galvenā prioritāte ir zemākas sākotnējās investīcijas.</li>
+                    <li>Projekti nav tik intensīvi, un biroja apstrādes laiks nav kritisks faktors.</li>
+                    <li>Ir nepieciešams ļoti viegls instruments (piem., darbam grūti pieejamās vietās).</li>
+                    <li>Jums jau ir spēcīga komanda, kas pieradusi pie datu pēcapstrādes SCENE vidē.</li>
+                </ul>
+                
+                <h4 class="text-xl font-semibold text-red-700 mb-2">Izvēlieties Leica RTC360, ja:</h4>
+                <ul class="list-disc list-inside space-y-2 text-slate-600 pl-4 mb-4">
+                    <li><strong>Laiks ir nauda.</strong> Jūsu galvenais mērķis ir maksimāla produktivitāte un ātrums.</li>
+                    <li>Jūs vēlaties gandrīz pilnībā eliminēt reģistrācijas laiku birojā.</li>
+                    <li>Nepieciešams ievērojami lielāks skenēšanas ātrums (2M punkti/sek) un lielāks diapazons (130m).</li>
+                    <li>Jūs novērtējat tūlītēju kvalitātes kontroli laukā, ko sniedz VIS tehnoloģija.</li>
+                </ul>
+                <p class="text-slate-700 font-semibold leading-relaxed mt-6 bg-slate-50 p-4 rounded-lg border border-slate-200">
+                    Rezumējot, Faro piedāvā zemāku ieejas cenu, bet Leica piedāvā zemākas ilgtermiņa ekspluatācijas izmaksas (TCO), pateicoties milzīgam laika ietaupījumam katrā projektā.
+                </p>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const tabs = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const target = tab.getAttribute('data-tab-target');
+
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+
+                    tabContents.forEach(content => {
+                        content.classList.remove('active');
+                        if (content.id === target) {
+                            content.classList.add('active');
+                        }
+                    });
+                });
+            });
+
+            if (document.getElementById('priceChart')) {
+                const ctx = document.getElementById('priceChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Faro Focus Core Pakotne', 'Leica RTC360 Pakotne'],
+                        datasets: [{
+                            label: 'Pakotnes Cena (EUR bez PVN)',
+                            data: [56857, 69629], // Atjauninātās cenas
+                            backgroundColor: [
+                                'rgba(59, 130, 246, 0.7)', 
+                                'rgba(239, 68, 68, 0.7)'    
+                            ],
+                            borderColor: [
+                                'rgba(59, 130, 246, 1)',
+                                'rgba(239, 68, 68, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            title: {
+                                display: true,
+                                text: 'Sākotnējo Ieguldījumu Salīdzinājums',
+                                font: {
+                                    size: 16,
+                                    family: 'Inter, sans-serif'
+                                }
+                            },
+                            tooltip: {
+                                titleFont: { family: 'Inter, sans-serif' },
+                                bodyFont: { family: 'Inter, sans-serif' },
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            label += new Intl.NumberFormat('lv-LV', { style: 'currency', currency: 'EUR' }).format(context.parsed.y);
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    font: { family: 'Inter, sans-serif' },
+                                    callback: function(value) {
+                                        return '€' + (value / 1000) + 'k';
+                                    }
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    font: { family: 'Inter, sans-serif' }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+
+</body>
+</html>
+
