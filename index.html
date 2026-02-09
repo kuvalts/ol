@@ -1,364 +1,759 @@
-<!DOCTYPE html>
-<html lang="lv">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Skeneru Salīdzinājums: Leica vs Faro</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f1f5f9; /* bg-slate-100 */
-        }
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-        
-        /* Jaunais, modernais cilnes stils */
-        .tab-btn {
-            padding: 0.75rem 1.25rem;
-            font-weight: 600;
-            border-radius: 0.5rem; /* rounded-lg */
-            transition: all 0.3s ease;
-            cursor: pointer;
-            background-color: #e2e8f0; /* bg-slate-200 */
-            color: #475569; /* text-slate-600 */
-        }
-        .tab-btn:hover {
-            background-color: #cbd5e1; /* bg-slate-300 */
-        }
-        .tab-btn.active {
-            background-color: #ffffff; /* bg-white */
-            color: #4f46e5; /* text-indigo-600 */
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
-        }
-        
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-            animation: fadeIn 0.5s ease;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  Trophy, Calendar, Clock, MapPin, Users, ChevronRight, X, 
+  Info, Tv, ExternalLink, Shield, Target, Wind, Snowflake, 
+  Flame, Timer, Star, Flag
+} from 'lucide-react';
 
-        .chart-container {
-            position: relative;
-            width: 100%;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-            height: 300px; 
-            max-height: 400px;
-        }
-        @media (min-width: 768px) {
-            .chart-container {
-                height: 350px;
-            }
-        }
-    </style>
-</head>
-<body class="text-slate-800">
+/**
+ * DATI (DATA) - Pilns grafiks atlikušajām spēlēm
+ */
+const LATVIJAS_GRAFIKS = [
+  // --- 9. FEBRUĀRIS (PIRMDIENA) ---
+  {
+    id: 'luge-train-9',
+    sport: 'Kamaniņas',
+    event: 'Sievietes - Oficiālie treniņi',
+    date: '2026-02-09',
+    time: '10:00',
+    venue: 'Cortina Sliding Centre',
+    status: 'Pabeigts',
+    channel: '-',
+    athletes: 'Elīna Ieva Bota, Kendija Aparjode',
+    details: 'Pēdējie sagatavošanās darbi pirms rītdienas finālbraucieniem.',
+    isHighlight: false
+  },
 
-    <!-- Chosen Palette: Slate Background, White Cards, Indigo Accents, Red/Blue for brands -->
-    <!-- Application Structure Plan: Pārveidota SPA ar četrām loģiskām cilnēm: (1) Parametri, (2) Izturība, (3) Darbplūsma (galvenā atšķirība), (4) Cena. Šī struktūra nodrošina skaidru informācijas plūsmu. AI noņemts. Pievienots moderns dizains. -->
-    <!-- Visualization & Content Choices: (1) Cenas -> Stabiņu diagramma (Chart.js) -> Atjauninātas cenas. (2) Tehniskie dati & Izturība -> HTML Tīkla tabulas -> Pievienoti ikonas un dati no PDF/meklēšanas par temperatūrām un IP. (3) Darbplūsma -> 2-kolonnu teksts -> Paplašināts, lai uzsvērtu VIS priekšrocības. -->
-    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. NO AI functionality. -->
+  // --- 10. FEBRUĀRIS (OTRDIENA) ---
+  {
+    id: 'xc-sprint-qual',
+    sport: 'Distanču Slēpošana',
+    event: 'Sprints (Brīvais stils) - Kvalifikācija',
+    date: '2026-02-10',
+    time: '10:15',
+    venue: 'Val di Fiemme',
+    status: 'Gaidāms',
+    channel: 'LTV7',
+    athletes: 'Patrīcija Eiduka, Raimo Vīgants, Lauris Kaparkalējs',
+    details: 'Visiem sportistiem jāiekļūst TOP 30, lai kvalificētos izslēgšanas braucieniem.',
+    isHighlight: false
+  },
+  {
+    id: 'st-1000m',
+    sport: 'Šorttreks',
+    event: 'Vīrieši 1000m - Priekšsacīkstes',
+    date: '2026-02-10',
+    time: '11:30',
+    venue: 'Milan Forum',
+    status: 'Gaidāms',
+    channel: 'LTV7 / Eurosport',
+    athletes: 'Roberts Krūzbergs',
+    details: 'Roberts Krūzbergs ir viens no pretendentiem uz augstu vietu.',
+    isHighlight: true
+  },
+  {
+    id: 'xc-sprint-final',
+    sport: 'Distanču Slēpošana',
+    event: 'Sprints (Brīvais stils) - Fināli',
+    date: '2026-02-10',
+    time: '12:45',
+    venue: 'Val di Fiemme',
+    status: 'Gaidāms',
+    channel: 'LTV7',
+    athletes: 'Ja kvalificēsies (Eiduka/Vīgants)',
+    details: 'Cīņa par medaļām sprinta distancē.',
+    isHighlight: true
+  },
+  {
+    id: 'bia-m-20k',
+    sport: 'Biatlons',
+    event: 'Vīrieši 20km Individuālā distance',
+    date: '2026-02-10',
+    time: '15:30',
+    venue: 'Antholz (Anterselva)',
+    status: 'Gaidāms',
+    channel: 'LTV7',
+    athletes: 'Andrejs Rastorgujevs, Renārs Birkentāls',
+    details: 'Klasiskā distance: 4 šaušanas (guļus, stāvus, guļus, stāvus). Par katru kļūdu +1 minūte.',
+    isHighlight: true
+  },
+  {
+    id: 'fig-m-short',
+    sport: 'Daiļslidošana',
+    event: 'Vīrieši - Īsā programma',
+    date: '2026-02-10',
+    time: '17:00',
+    venue: 'Milan Forum',
+    status: 'Gaidāms',
+    channel: 'LTV7',
+    athletes: 'Deniss Vasiļjevs',
+    details: 'Deniss izpildīs savu īso programmu. Jāiekļūst starp 24 labākajiem, lai tiktu uz izvēles programmu.',
+    isHighlight: true
+  },
+  {
+    id: 'luge-w-final',
+    sport: 'Kamaniņas',
+    event: 'Sievietes - 3. un 4. brauciens (Medaļas)',
+    date: '2026-02-10',
+    time: '18:00',
+    venue: 'Cortina Sliding Centre',
+    status: 'Gaidāms',
+    channel: 'LTV7',
+    athletes: 'Elīna Ieva Bota, Kendija Aparjode',
+    details: 'Izšķirošie braucieni par medaļām.',
+    isHighlight: true
+  },
 
-    <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+  // --- 11. FEBRUĀRIS (TREŠDIENA) ---
+  {
+    id: 'luge-doubles',
+    sport: 'Kamaniņas',
+    event: 'Divnieki - 1. un 2. brauciens (Medaļas)',
+    date: '2026-02-11',
+    time: '14:00',
+    venue: 'Cortina Sliding Centre',
+    status: 'Gaidāms',
+    channel: 'LTV7',
+    athletes: 'M. Bots / R. Plūme, E. Ševics-Mikeļševics / L. Krasts',
+    details: 'Latvijas lielākā cerība uz medaļu. Bots/Plūme ir Pasaules kausa līderu vidū.',
+    isHighlight: true
+  },
+  {
+    id: 'bia-w-15k',
+    sport: 'Biatlons',
+    event: 'Sievietes 15km Individuālā distance',
+    date: '2026-02-11',
+    time: '15:30',
+    venue: 'Antholz (Anterselva)',
+    status: 'Gaidāms',
+    channel: 'LTV7',
+    athletes: 'Baiba Bendika, Sanita Buliņa',
+    details: 'Baibas Bendikas iespēja cīnīties par augstu vietu, ja izdosies precīza šaušana.',
+    isHighlight: false
+  },
 
-        <header class="text-center mb-12 p-8 bg-gradient-to-r from-indigo-700 to-indigo-500 rounded-xl shadow-lg">
-            <h1 class="text-4xl md:text-5xl font-extrabold text-white mb-2">3D Lāzerskeneru Analīze</h1>
-            <p class="text-xl md:text-2xl text-indigo-100">Leica RTC360 vs. Faro Focus Core</p>
-        </header>
+  // --- 12. FEBRUĀRIS (CETURTDIENA) ---
+  {
+    id: 'skel-m-12',
+    sport: 'Skeletons',
+    event: 'Vīrieši - 1. un 2. brauciens',
+    date: '2026-02-12',
+    time: '10:00',
+    venue: 'Cortina Sliding Centre',
+    status: 'Gaidāms',
+    channel: 'LTV7',
+    athletes: 'Emīls Indriksons',
+    details: 'Pirmā sacensību diena skeletonā.',
+    isHighlight: false
+  },
+  {
+    id: 'luge-relay',
+    sport: 'Kamaniņas',
+    event: 'Komandu Stafete (Medaļas)',
+    date: '2026-02-12',
+    time: '15:00',
+    venue: 'Cortina Sliding Centre',
+    status: 'Gaidāms',
+    channel: 'LTV7',
+    athletes: 'Latvijas Izlase (Sieviete, Vīrietis, Divnieks)',
+    details: 'Viena no skatāmākajām disciplīnām. Latvija vienmēr cīnās par pjedestālu.',
+    isHighlight: true
+  },
+  {
+    id: 'fig-m-free',
+    sport: 'Daiļslidošana',
+    event: 'Vīrieši - Izvēles programma (Medaļas)',
+    date: '2026-02-12',
+    time: '17:00',
+    venue: 'Milan Forum',
+    status: 'Gaidāms',
+    channel: 'LTV7',
+    athletes: 'Deniss Vasiļjevs',
+    details: 'Fināls daiļslidošanā vīriešiem.',
+    isHighlight: false
+  },
+  {
+    id: 'hock-usa',
+    sport: 'Hokejs',
+    event: 'Latvija vs ASV',
+    date: '2026-02-12',
+    time: '22:10',
+    venue: 'Milāna (PalaItalia)',
+    status: 'Gaidāms',
+    channel: 'LTV7',
+    athletes: 'Latvijas Izlase',
+    details: 'Pirmā spēle grupā pret spēcīgo ASV izlasi (NHL spēlētāji). Vārtos sagaidāms Elvis Merzļikins.',
+    isHighlight: true
+  },
 
-        <section class="bg-white shadow-xl rounded-xl p-6 sm:p-8 mb-10">
-            <h2 class="text-3xl font-bold text-slate-800 mb-4">Ievads</h2>
-            <p class="text-slate-600 leading-relaxed text-lg">
-                Šī analīze apskata divus vadošos 3D lāzerskenerus vidējā segmentā: Leica RTC360 un Faro Focus Core. Abi instrumenti ir paredzēti ātrai un precīzai realitātes tveršanai, taču tiem piemīt fundamentāli atšķirīgas tehnoloģiskās pieejas, kas ietekmē gan lauka darbus, gan biroja apstrādi. Mērķis ir sniegt visaptverošu pārskatu par galvenajām specifikācijām, darbplūsmas atšķirībām un izmaksu struktūru.
-            </p>
-        </section>
+  // --- 13. FEBRUĀRIS (PIEKTDIENA) ---
+  {
+    id: 'skel-m-34',
+    sport: 'Skeletons',
+    event: 'Vīrieši - 3. un 4. brauciens (Medaļas)',
+    date: '2026-02-13',
+    time: '10:00',
+    venue: 'Cortina Sliding Centre',
+    status: 'Gaidāms',
+    channel: 'LTV7',
+    athletes: 'Emīls Indriksons',
+    details: 'Izšķirošie braucieni skeletonā.',
+    isHighlight: true
+  },
+  {
+    id: 'xc-10k-classic',
+    sport: 'Distanču Slēpošana',
+    event: 'Vīrieši 15km Klasika',
+    date: '2026-02-13',
+    time: '11:00',
+    venue: 'Val di Fiemme',
+    status: 'Gaidāms',
+    channel: 'LTV7',
+    athletes: 'Raimo Vīgants',
+    details: 'Intervāla starts klasiskajā stilā.',
+    isHighlight: false
+  },
+  {
+    id: 'skel-w-12',
+    sport: 'Skeletons',
+    event: 'Sievietes - 1. un 2. brauciens',
+    date: '2026-02-13',
+    time: '14:30',
+    venue: 'Cortina Sliding Centre',
+    status: 'Gaidāms',
+    channel: 'LTV7',
+    athletes: 'Marta Andžāne',
+    details: '',
+    isHighlight: false
+  },
 
-        <section class="bg-white shadow-xl rounded-xl overflow-hidden">
-            <div class="p-6 sm:p-8">
-                <nav class="flex flex-wrap justify-center gap-4 mb-8" aria-label="Tabs">
-                    <button class="tab-btn active" data-tab-target="params">Galvenie Parametri</button>
-                    <button class="tab-btn" data-tab-target="durability">Klimats un Izturība</button>
-                    <button class="tab-btn" data-tab-target="workflow">Darbplūsma</button>
-                    <button class="tab-btn" data-tab-target="pricing">Cenu Analīze</button>
-                </nav>
+  // --- 14. FEBRUĀRIS (SESTDIENA) ---
+  {
+    id: 'alp-slalom-w',
+    sport: 'Kalnu Slēpošana',
+    event: 'Sievietes - Slaloms',
+    date: '2026-02-14',
+    time: '10:30',
+    venue: 'Cortina',
+    status: 'Gaidāms',
+    channel: 'LTV7',
+    athletes: 'Dženifera Ģērmane',
+    details: 'Dženifera ir speciāliste tieši slalomā. Iespēja iekļūt TOP 10.',
+    isHighlight: true
+  },
+  {
+    id: 'bob-2man-12',
+    sport: 'Bobslejs',
+    event: 'Divnieki - 1. un 2. brauciens',
+    date: '2026-02-14',
+    time: '11:00',
+    venue: 'Cortina Sliding Centre',
+    status: 'Gaidāms',
+    channel: 'LTV7',
+    athletes: 'Emīls Cipulis, Jēkabs Kalenda',
+    details: 'Sākas bobsleja sacensības. Cipulis ir komandas līderis.',
+    isHighlight: false
+  },
+  {
+    id: 'bia-sprint-m',
+    sport: 'Biatlons',
+    event: 'Vīrieši 10km Sprints',
+    date: '2026-02-14',
+    time: '13:00',
+    venue: 'Antholz',
+    status: 'Gaidāms',
+    channel: 'LTV7',
+    athletes: 'Andrejs Rastorgujevs',
+    details: 'Dinamiskākā biatlona disciplīna. 2 šaušanas.',
+    isHighlight: true
+  },
+  {
+    id: 'hock-ger',
+    sport: 'Hokejs',
+    event: 'Latvija vs Vācija',
+    date: '2026-02-14',
+    time: '16:10',
+    venue: 'Milāna',
+    status: 'Gaidāms',
+    channel: 'LTV7',
+    athletes: 'Latvijas Izlase',
+    details: 'Izšķiroša spēle par vietu grupā. Pret Vāciju vienmēr ir sīvas cīņas.',
+    isHighlight: true
+  },
 
-                <div>
-                    <div id="params" class="tab-content active">
-                        <h3 class="text-2xl font-semibold text-indigo-700 mb-6 text-center">Tehnisko Parametru Pārskats</h3>
-                        <div class="overflow-x-auto">
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-                                <div class="font-semibold text-slate-600 p-4 rounded-lg bg-slate-100 flex items-center justify-center md:justify-start">Parametrs</div>
-                                <div class="font-bold text-lg text-red-600 p-4 rounded-lg bg-red-50 text-center">Leica RTC360</div>
-                                <div class="font-bold text-lg text-blue-600 p-4 rounded-lg bg-blue-50 text-center">Faro Focus Core</div>
+  // --- 16. FEBRUĀRIS (PIRMDIENA) ---
+  {
+    id: 'hock-den',
+    sport: 'Hokejs',
+    event: 'Latvija vs Dānija',
+    date: '2026-02-16',
+    time: '16:10',
+    venue: 'Milāna',
+    status: 'Gaidāms',
+    channel: 'LTV7',
+    athletes: 'Latvijas Izlase',
+    details: 'Noslēdzošā grupas spēle. Obligāti jāuzvar, lai nodrošinātu labāku pozīciju izslēgšanas spēlēm.',
+    isHighlight: true
+  },
+  
+  // --- 18. FEBRUĀRIS (TREŠDIENA) ---
+  {
+    id: 'xc-team-sprint',
+    sport: 'Distanču Slēpošana',
+    event: 'Komandu Sprints (Klasika)',
+    date: '2026-02-18',
+    time: '10:45',
+    venue: 'Val di Fiemme',
+    status: 'Gaidāms',
+    channel: 'LTV7',
+    athletes: 'Latvijas Komanda',
+    details: '',
+    isHighlight: false
+  },
+  {
+    id: 'bia-relay-m',
+    sport: 'Biatlons',
+    event: 'Vīrieši 4x7.5km Stafete',
+    date: '2026-02-18',
+    time: '15:30',
+    venue: 'Antholz',
+    status: 'Gaidāms',
+    channel: 'LTV7',
+    athletes: 'Latvijas Izlase',
+    details: '',
+    isHighlight: false
+  },
 
-                                <div class="font-semibold text-slate-600 p-4 rounded-lg bg-slate-100 flex items-center">⚡ Mērīšanas Ātrums</div>
-                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center"><strong>Līdz 2,000,000 punkti/sek.</strong></div>
-                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center"><strong>Līdz 976,000 punkti/sek.</strong></div>
+  // --- 21. FEBRUĀRIS (SESTDIENA) ---
+  {
+    id: 'bob-4man-12',
+    sport: 'Bobslejs',
+    event: 'Četrinieki - 1. un 2. brauciens',
+    date: '2026-02-21',
+    time: '10:00',
+    venue: 'Cortina Sliding Centre',
+    status: 'Gaidāms',
+    channel: 'LTV7',
+    athletes: 'E. Cipuļa ekipāža',
+    details: 'Latvijas "karaliskā" disciplīna.',
+    isHighlight: false
+  },
+  {
+    id: 'bia-mass',
+    sport: 'Biatlons',
+    event: 'Masu Starts (30 labākie)',
+    date: '2026-02-21',
+    time: '13:00',
+    venue: 'Antholz',
+    status: 'Gaidāms',
+    channel: 'LTV7',
+    athletes: 'Andrejs Rastorgujevs (ja kvalificējas)',
+    details: 'Pēdējā biatlona sacensība.',
+    isHighlight: true
+  },
 
-                                <div class="font-semibold text-slate-600 p-4 rounded-lg bg-slate-100 flex items-center">📏 Diapazons (Attālums)</div>
-                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center"><strong>0.5m - 130m</strong></div>
-                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center">0.5m - 70m (līdz 100m)</div>
+  // --- 22. FEBRUĀRIS (SVĒTDIENA) ---
+  {
+    id: 'bob-4man-34',
+    sport: 'Bobslejs',
+    event: 'Četrinieki - Fināli (Medaļas)',
+    date: '2026-02-22',
+    time: '10:00',
+    venue: 'Cortina Sliding Centre',
+    status: 'Gaidāms',
+    channel: 'LTV7',
+    athletes: 'E. Cipuļa ekipāža',
+    details: 'Noslēdzošā olimpisko spēļu diena.',
+    isHighlight: true
+  },
+  {
+    id: 'xc-50k',
+    sport: 'Distanču Slēpošana',
+    event: 'Vīrieši 50km Masu starts',
+    date: '2026-02-22',
+    time: '11:00',
+    venue: 'Val di Fiemme',
+    status: 'Gaidāms',
+    channel: 'LTV7',
+    athletes: 'Raimo Vīgants',
+    details: 'Olimpiādes maratons.',
+    isHighlight: false
+  }
+];
 
-                                <div class="font-semibold text-slate-600 p-4 rounded-lg bg-slate-100 flex items-center">🎯 3D Punkta Precizitāte</div>
-                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center"><strong>1.9 mm @ 10m</strong></div>
-                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center">2 mm @ 10m</div>
+// --- PALĪG KOMPONENTES ---
 
-                                <div class="font-semibold text-slate-600 p-4 rounded-lg bg-slate-100 flex items-center">⚖️ Svars</div>
-                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center">5.35 kg (bez akum.)</div>
-                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center"><strong>4.4 kg (ar akumulatoru)</strong></div>
-                                
-                                <div class="font-semibold text-slate-600 p-4 rounded-lg bg-slate-100 flex items-center">🖼️ HDR Attēli</div>
-                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center">Jā (5 kronšteinu HDR)</div>
-                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center">Jā (3 kronšteinu HDR)</div>
-                                
-                                <div class="font-semibold text-slate-600 p-4 rounded-lg bg-slate-100 flex items-center">🔄 Lauka Reģistrācija</div>
-                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center"><strong>Automātiska ar VIS</strong></div>
-                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center">Ar papildu programmatūru</div>
-                            </div>
-                        </div>
-                    </div>
+const SportaIkona = ({ sport, className }) => {
+  switch (sport) {
+    case 'Hokejs': return <Snowflake className={className} />;
+    case 'Kamaniņas': return <Flame className={className} />;
+    case 'Bobslejs': return <Timer className={className} />;
+    case 'Biatlons': return <Target className={className} />;
+    case 'Skeletons': return <Wind className={className} />;
+    case 'Daiļslidošana': return <Users className={className} />;
+    default: return <Trophy className={className} />;
+  }
+};
 
-                    <div id="durability" class="tab-content">
-                        <h3 class="text-2xl font-semibold text-indigo-700 mb-6 text-center">Klimats un Vides Izturība</h3>
-                        <p class="text-slate-600 mb-8 max-w-3xl mx-auto text-center">
-                            Abu skeneru izturība ir līdzīga, taču ar dažām būtiskām atšķirībām darbības temperatūrās, kas var ietekmēt darbu ekstremālākos apstākļos.
-                        </p>
-                        <div class="overflow-x-auto">
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-                                <div class="font-semibold text-slate-600 p-4 rounded-lg bg-slate-100 flex items-center justify-center md:justify-start">Parametrs</div>
-                                <div class="font-bold text-lg text-red-600 p-4 rounded-lg bg-red-50 text-center">Leica RTC360</div>
-                                <div class="font-bold text-lg text-blue-600 p-4 rounded-lg bg-blue-50 text-center">Faro Focus Core</div>
-
-                                <div class="font-semibold text-slate-600 p-4 rounded-lg bg-slate-100 flex items-center">🛡️ Aizsardzības Klase</div>
-                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center"><strong>IP54</strong> (aizsardzība pret putekļiem un ūdens šļakatām)</div>
-                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center"><strong>IP54</strong> (aizsardzība pret putekļiem un ūdens šļakatām)</div>
-
-                                <div class="font-semibold text-slate-600 p-4 rounded-lg bg-slate-100 flex items-center">🌡️ Darbības Temperatūra</div>
-                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center"><strong>-5°C līdz +40°C</strong></div>
-                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center">+5°C līdz +40°C (Standarta)</div>
-
-                                <div class="font-semibold text-slate-600 p-4 rounded-lg bg-slate-100 flex items-center">🌡️ Paplašināta Temperatūra</div>
-                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center">Nav norādīts (bāzes -5°C)</div>
-                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center">-10°C līdz +55°C (ar ierobežojumiem*)</div>
-
-                                <div class="font-semibold text-slate-600 p-4 rounded-lg bg-slate-100 flex items-center">📦 Uzglabāšanas Temperatūra</div>
-                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center"><strong>-40°C līdz +70°C</strong></div>
-                                <div class="p-4 rounded-lg bg-white shadow-sm text-center flex items-center justify-center">-10°C līdz +60°C</div>
-                            </div>
-                        </div>
-                        <p class="text-sm text-slate-500 mt-6 max-w-5xl mx-auto">
-                            * Faro norāda, ka darbībai zemā temperatūrā skeneris jāieslēdz, kad tā iekšējā temperatūra ir virs +15°C, un darbam augstā temperatūrā (virs 40°C) var būt nepieciešams papildu termālais pārsegs. Leica RTC360 bāzes darbības diapazons ir plašāks aukstā laikā (-5°C).
-                        </p>
-                    </div>
-
-                    <div id="workflow" class="tab-content">
-                        <h3 class="text-2xl font-semibold text-indigo-700 mb-6 text-center">Darbplūsma: Reāllaiks pret Pēcapstrādi</h3>
-                        <p class="text-slate-600 mb-8 max-w-3xl mx-auto text-center">
-                            Šis ir vissvarīgākais atšķirības punkts. Leica RTC360 ir veidots ap automatizētu reāllaika darbplūsmu, savukārt Faro Focus Core paļaujas uz tradicionālāku pieeju ar pēcapstrādi birojā.
-                        </p>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div class="bg-slate-50 p-6 rounded-lg border-l-4 border-red-500 shadow-md">
-                                <h4 class="text-xl font-bold text-red-600 mb-4">Leica RTC360: "Skenē un Skaties"</h4>
-                                <p class="text-slate-700 mb-4">
-                                    Leica unikālā priekšrocība ir <strong>Vizuālā Inerciālā Sistēma (VIS)</strong>, kas automātiski nosaka skenera pārvietojumu starp pozīcijām, reģistrējot datus reāllaikā.
-                                </p>
-                                <ul class="list-disc list-inside space-y-3 text-slate-600">
-                                    <li><strong>Automātiska reģistrācija:</strong> Skenējumi tiek automātiski savietoti planšetdatorā (ar Cyclone FIELD 360) jau lauka apstākļos.</li>
-                                    <li><strong>Tūlītēja kvalitātes kontrole:</strong> Operators uzreiz redz gatavu, savietotu punktu mākoni un var nekavējoties identificēt trūkstošos datus.</li>
-                                    <li><strong>Milzīgs laika ietaupījums:</strong> Darbs birojā tiek samazināts līdz minimumam. Ierodoties birojā, punktu mākonis ir praktiski gatavs eksportēšanai.</li>
-                                    <li><strong>Produktivitāte:</strong> 4x lielāks skenēšanas ātrums (2M punkti/sek) apvienojumā ar VIS tehnoloģiju nozīmē, ka objektu var pabeigt daudz ātrāk.</li>
-                                </ul>
-                            </div>
-                            <div class="bg-slate-50 p-6 rounded-lg border-l-4 border-blue-500 shadow-md">
-                                <h4 class="text-xl font-bold text-blue-600 mb-4">Faro Focus Core: "Skenē un Apstrādā"</h4>
-                                <p class="text-slate-700 mb-4">
-                                    Focus Core ir uzticams un viegls skeneris datu vākšanai, kas pamatā tiek apstrādāti birojā, izmantojot jaudīgo SCENE programmatūru.
-                                </p>
-                                <ul class="list-disc list-inside space-y-3 text-slate-600">
-                                    <li><strong>Datu vākšana uz vietas:</strong> Instruments ātri savāc 3D datus katrā pozīcijā. Tas ir vieglāks, kas var būt priekšrocība grūti pieejamās vietās.</li>
-                                    <li><strong>Pēcapstrāde birojā:</strong> Dati tiek importēti FARO SCENE programmā, kur notiek reģistrācija (savietošana), izmantojot mērķus vai "cloud-to-cloud" algoritmus.</li>
-                                    <li><strong>SCENE programmatūra:</strong> Iekļautā mūža licence ir ļoti spēcīgs rīks datu apstrādei, tīrīšanai un analīzei birojā.</li>
-                                    <li><strong>Papildu iespējas (Maksas):</strong> Lai iegūtu lauka reģistrācijai līdzīgu funkcionalitāti, ir nepieciešams iegādāties papildu abonementu FARO Stream lietotnei.</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="pricing" class="tab-content">
-                        <h3 class="text-2xl font-semibold text-indigo-700 mb-6 text-center">Cenu un Vērtības Analīze</h3>
-                        <p class="text-slate-600 mb-8 max-w-3xl mx-auto text-center">
-                            Aplūkojot atjauninātos piedāvājumus, cenu atšķirība ir aptuveni 12,700 €. Novērtējot kopējās investīcijas (TCO), ir kritiski svarīgi ņemt vērā laika ietaupījumu un produktivitātes pieaugumu, ko nodrošina Leica RTC360 reāllaika reģistrācijas tehnoloģija.
-                        </p>
-                        <div class="chart-container mb-8">
-                            <canvas id="priceChart"></canvas>
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
-                            <div class="bg-blue-50 border border-blue-200 p-6 rounded-lg shadow-lg">
-                                <h4 class="text-xl font-bold text-blue-700 mb-3">Faro Focus Core Pakotne</h4>
-                                <p class="text-3xl font-bold text-blue-600 mb-3">56,857 € <span class="text-sm font-normal text-slate-600">(bez PVN)</span></p>
-                                <ul class="list-disc list-inside space-y-1 text-slate-600">
-                                    <li>Focus Core 3D skeneris</li>
-                                    <li>Statīvs un piederumi</li>
-                                    <li>FARO SCENE mūža licence</li>
-                                </ul>
-                            </div>
-                            <div class="bg-red-50 border border-red-200 p-6 rounded-lg shadow-lg">
-                                <h4 class="text-xl font-bold text-red-700 mb-3">Leica RTC360 Pakotne</h4>
-                                <p class="text-3xl font-bold text-red-600 mb-3">69,629 € <span class="text-sm font-normal text-slate-600">(bez PVN)</span></p>
-                                <ul class="list-disc list-inside space-y-1 text-slate-600">
-                                    <li>RTC360 skeneris ar VIS</li>
-                                    <li>Statīvs, akumulatori, kaste</li>
-                                    <li>Cyclone REGISTER 360 mūža licence</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-        
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-10">
-            <section class="bg-white shadow-xl rounded-xl p-8">
-                <h2 class="text-3xl font-bold text-slate-800 mb-4">Konkurentu Konteksts</h2>
-                <div class="bg-slate-50 p-6 rounded-lg border border-slate-200">
-                    <h4 class="text-xl font-bold text-gray-700 mb-3">Trimble X12</h4>
-                    <p class="text-slate-600 leading-relaxed">
-                        Kā vēl viens nozīmīgs spēlētājs augstākās klases skeneru tirgū ir jāpiemin Trimble X12. Šis instruments ir pazīstams ar savu augsto precizitāti un liela attāluma skenēšanas spējām (līdz 365m), konkurējot gan ar Leica, gan Faro augstākā līmeņa modeļiem. Tas piedāvā savas lauka reģistrācijas programmatūras (Trimble Perspective) un jaudīgu biroja programmatūru (Trimble RealWorks), pozicionējot sevi kā visaptverošu risinājumu sarežģītiem mērniecības un būvniecības projektiem.
-                    </p>
-                </div>
-            </section>
-            
-            <section class="bg-white shadow-xl rounded-xl p-8">
-                <h2 class="text-3xl font-bold text-slate-800 mb-4">Secinājums: Kurš ir piemērotāks?</h2>
-                <p class="text-slate-600 leading-relaxed mb-4">
-                    Izvēle starp Leica RTC360 un Faro Focus Core ir stratēģisks lēmums, kas atkarīgs no jūsu uzņēmuma prioritātēm.
-                </p>
-                
-                <h4 class="text-xl font-semibold text-blue-700 mb-2">Izvēlieties Faro Focus Core, ja:</h4>
-                <ul class="list-disc list-inside space-y-2 text-slate-600 pl-4 mb-6">
-                    <li>Galvenā prioritāte ir zemākas sākotnējās investīcijas.</li>
-                    <li>Projekti nav tik intensīvi, un biroja apstrādes laiks nav kritisks faktors.</li>
-                    <li>Ir nepieciešams ļoti viegls instruments (piem., darbam grūti pieejamās vietās).</li>
-                    <li>Jums jau ir spēcīga komanda, kas pieradusi pie datu pēcapstrādes SCENE vidē.</li>
-                </ul>
-                
-                <h4 class="text-xl font-semibold text-red-700 mb-2">Izvēlieties Leica RTC360, ja:</h4>
-                <ul class="list-disc list-inside space-y-2 text-slate-600 pl-4 mb-4">
-                    <li><strong>Laiks ir nauda.</strong> Jūsu galvenais mērķis ir maksimāla produktivitāte un ātrums.</li>
-                    <li>Jūs vēlaties gandrīz pilnībā eliminēt reģistrācijas laiku birojā.</li>
-                    <li>Nepieciešams ievērojami lielāks skenēšanas ātrums (2M punkti/sek) un lielāks diapazons (130m).</li>
-                    <li>Jūs novērtējat tūlītēju kvalitātes kontroli laukā, ko sniedz VIS tehnoloģija.</li>
-                </ul>
-                <p class="text-slate-700 font-semibold leading-relaxed mt-6 bg-slate-50 p-4 rounded-lg border border-slate-200">
-                    Rezumējot, Faro piedāvā zemāku ieejas cenu, bet Leica piedāvā zemākas ilgtermiņa ekspluatācijas izmaksas (TCO), pateicoties milzīgam laika ietaupījumam katrā projektā.
-                </p>
-            </section>
-        </div>
+const DetaluRinda = ({ icon: Icon, label, value }) => (
+  <div className="flex items-start space-x-3 py-3 border-b border-slate-100 last:border-0">
+    <Icon className="w-5 h-5 text-slate-400 mt-0.5 shrink-0" />
+    <div>
+      <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">{label}</div>
+      <div className="text-sm font-medium text-slate-800 leading-relaxed">{value}</div>
     </div>
+  </div>
+);
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const tabs = document.querySelectorAll('.tab-btn');
-            const tabContents = document.querySelectorAll('.tab-content');
+// --- MODĀLAIS LOGS (MATCH CENTER) ---
 
-            tabs.forEach(tab => {
-                tab.addEventListener('click', () => {
-                    const target = tab.getAttribute('data-tab-target');
+const SacensibuCentrs = ({ event, onClose }) => {
+  if (!event) return null;
 
-                    tabs.forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+      <div className="bg-white w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl flex flex-col">
+        
+        {/* Galvene */}
+        <div className="sticky top-0 z-10 bg-[#9E3039] text-white p-5 flex justify-between items-start">
+          <div>
+            <div className="flex items-center space-x-2 opacity-90 text-xs font-bold uppercase tracking-wider mb-1">
+              <span>{event.sport}</span>
+            </div>
+            <h2 className="text-xl font-bold leading-tight pr-4">{event.event}</h2>
+          </div>
+          <button 
+            onClick={onClose}
+            className="p-2 bg-white/20 hover:bg-white/30 rounded-full transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
-                    tabContents.forEach(content => {
-                        content.classList.remove('active');
-                        if (content.id === target) {
-                            content.classList.add('active');
-                        }
-                    });
-                });
-            });
+        {/* Saturs */}
+        <div className="p-6">
+          
+          {/* Galvenais Info */}
+          <div className="bg-slate-50 rounded-xl p-4 mb-6 border border-slate-200 shadow-sm">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="text-xs text-slate-500 uppercase font-bold mb-1">Datums & Laiks</div>
+                <div className="flex items-center text-base font-bold text-slate-900">
+                  <Calendar className="w-4 h-4 mr-2 text-[#9E3039]" />
+                  {new Date(event.date).toLocaleDateString('lv-LV', { day: 'numeric', month: 'short' })}
+                </div>
+                <div className="flex items-center text-lg font-bold text-slate-900 mt-1">
+                  <Clock className="w-4 h-4 mr-2 text-[#9E3039]" />
+                  {event.time} <span className="text-xs text-slate-400 ml-1 font-normal">LV laiks</span>
+                </div>
+              </div>
+              <div>
+                 <div className="text-xs text-slate-500 uppercase font-bold mb-1">Norises Vieta</div>
+                 <div className="flex items-start text-sm font-bold text-slate-900">
+                   <MapPin className="w-4 h-4 mr-2 text-[#9E3039] shrink-0 mt-0.5" />
+                   {event.venue}
+                 </div>
+              </div>
+            </div>
+          </div>
 
-            if (document.getElementById('priceChart')) {
-                const ctx = document.getElementById('priceChart').getContext('2d');
-                new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: ['Faro Focus Core Pakotne', 'Leica RTC360 Pakotne'],
-                        datasets: [{
-                            label: 'Pakotnes Cena (EUR bez PVN)',
-                            data: [56857, 69629], // Atjauninātās cenas
-                            backgroundColor: [
-                                'rgba(59, 130, 246, 0.7)', 
-                                'rgba(239, 68, 68, 0.7)'    
-                            ],
-                            borderColor: [
-                                'rgba(59, 130, 246, 1)',
-                                'rgba(239, 68, 68, 1)'
-                            ],
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: false
-                            },
-                            title: {
-                                display: true,
-                                text: 'Sākotnējo Ieguldījumu Salīdzinājums',
-                                font: {
-                                    size: 16,
-                                    family: 'Inter, sans-serif'
-                                }
-                            },
-                            tooltip: {
-                                titleFont: { family: 'Inter, sans-serif' },
-                                bodyFont: { family: 'Inter, sans-serif' },
-                                callbacks: {
-                                    label: function(context) {
-                                        let label = context.dataset.label || '';
-                                        if (label) {
-                                            label += ': ';
-                                        }
-                                        if (context.parsed.y !== null) {
-                                            label += new Intl.NumberFormat('lv-LV', { style: 'currency', currency: 'EUR' }).format(context.parsed.y);
-                                        }
-                                        return label;
-                                    }
-                                }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    font: { family: 'Inter, sans-serif' },
-                                    callback: function(value) {
-                                        return '€' + (value / 1000) + 'k';
-                                    }
-                                }
-                            },
-                            x: {
-                                ticks: {
-                                    font: { family: 'Inter, sans-serif' }
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-        });
-    </script>
+          {/* Detaļas */}
+          <div className="space-y-1">
+             <DetaluRinda 
+               icon={Users} 
+               label="Latvijas Sportisti" 
+               value={event.athletes} 
+             />
+             <DetaluRinda 
+               icon={Info} 
+               label="Apraksts" 
+               value={event.details} 
+             />
+             <DetaluRinda 
+               icon={Tv} 
+               label="Tiešraide" 
+               value={event.channel || "Nav info"} 
+             />
+             <DetaluRinda 
+               icon={Shield} 
+               label="Statuss" 
+               value={event.status} 
+             />
+          </div>
 
-</body>
-</html>
+        </div>
 
+        {/* Kājene */}
+        <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-center rounded-b-2xl">
+          <button onClick={onClose} className="text-slate-500 font-medium text-sm hover:text-slate-800">
+            Aizvērt
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- GALVENĀ LIETOTNE ---
+
+const LatviaOlympicsApp = () => {
+  const [activeTab, setActiveTab] = useState('schedule');
+  const [events, setEvents] = useState(LATVIJAS_GRAFIKS);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [filterSport, setFilterSport] = useState('Visi');
+  
+  // Pašreizējais laiks
+  const [currentTime, setCurrentTime] = useState(new Date("2026-02-09T23:33:00"));
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(prev => new Date(prev.getTime() + 60000));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Sporta veidu saraksts
+  const sportsList = useMemo(() => {
+    const uniqueSports = [...new Set(LATVIJAS_GRAFIKS.map(item => item.sport))];
+    return ['Visi', ...uniqueSports];
+  }, []);
+
+  // Filtrēšana un Grupēšana
+  const processedSchedule = useMemo(() => {
+    let filtered = events;
+    if (filterSport !== 'Visi') {
+      filtered = filtered.filter(e => e.sport === filterSport);
+    }
+    
+    // Kārtot pēc datuma un laika
+    filtered.sort((a, b) => new Date(a.date + 'T' + a.time) - new Date(b.date + 'T' + b.time));
+
+    const grouped = filtered.reduce((acc, item) => {
+      if (!acc[item.date]) acc[item.date] = [];
+      acc[item.date].push(item);
+      return acc;
+    }, {});
+
+    return grouped;
+  }, [filterSport, events]);
+
+  const formatDateLatvian = (dateStr) => {
+    const date = new Date(dateStr);
+    const today = new Date("2026-02-09");
+    const tomorrow = new Date("2026-02-10");
+    
+    if (date.toDateString() === today.toDateString()) return "Šodien, 9. februāris";
+    if (date.toDateString() === tomorrow.toDateString()) return "Rīt, 10. februāris";
+    
+    // Latvian formatting using Intl
+    return new Intl.DateTimeFormat('lv-LV', { weekday: 'long', day: 'numeric', month: 'long' }).format(date);
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-100 font-sans text-slate-900 pb-10">
+      
+      {/* Galvene */}
+      <header className="bg-gradient-to-r from-[#9E3039] to-[#7a242b] text-white shadow-lg sticky top-0 z-40">
+        <div className="max-w-3xl mx-auto px-4 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-3">
+              <div className="bg-white text-[#9E3039] font-bold h-10 w-10 flex items-center justify-center rounded-full shadow-md text-xl">
+                LV
+              </div>
+              <div>
+                <h1 className="text-lg font-bold leading-tight">Milano Cortina 2026</h1>
+                <p className="text-xs text-white/80 font-medium">Latvijas Izlases Kalendārs</p>
+              </div>
+            </div>
+            <div className="text-right hidden sm:block">
+               <div className="text-xs font-medium uppercase opacity-80">Rīgas Laiks</div>
+               <div className="font-mono font-bold text-lg">
+                 {currentTime.toLocaleTimeString('lv-LV', { hour: '2-digit', minute: '2-digit' })}
+               </div>
+            </div>
+          </div>
+
+          {/* Navigācija */}
+          <div className="flex mt-4 space-x-1 overflow-x-auto scrollbar-hide">
+            <button
+              onClick={() => setActiveTab('schedule')}
+              className={`px-4 py-2 rounded-t-lg text-sm font-bold transition-all ${
+                activeTab === 'schedule' 
+                  ? 'bg-slate-100 text-[#9E3039]' 
+                  : 'text-white/70 hover:bg-white/10'
+              }`}
+            >
+              Kalendārs
+            </button>
+            <button
+              onClick={() => setActiveTab('roster')}
+              className={`px-4 py-2 rounded-t-lg text-sm font-bold transition-all ${
+                activeTab === 'roster' 
+                  ? 'bg-slate-100 text-[#9E3039]' 
+                  : 'text-white/70 hover:bg-white/10'
+              }`}
+            >
+              Izlases Sastāvs
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-3xl mx-auto px-4 py-6">
+        
+        {activeTab === 'schedule' && (
+          <div className="animate-fade-in">
+            {/* Filtri */}
+            <div className="mb-6 flex space-x-2 overflow-x-auto pb-2 scrollbar-hide">
+              {sportsList.map(sport => (
+                <button
+                  key={sport}
+                  onClick={() => setFilterSport(sport)}
+                  className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all border ${
+                    filterSport === sport 
+                      ? 'bg-[#9E3039] text-white border-[#9E3039] shadow-md' 
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  {sport}
+                </button>
+              ))}
+            </div>
+
+            {/* Saraksts */}
+            <div className="space-y-8">
+              {Object.keys(processedSchedule).map(date => (
+                <div key={date}>
+                  {/* Datuma atdalītājs */}
+                  <div className="sticky top-[130px] sm:top-[85px] z-30 py-2 bg-slate-100/95 backdrop-blur border-b border-slate-200 mb-4 flex items-center">
+                    <div className={`h-2.5 w-2.5 rounded-full mr-3 ${date === '2026-02-09' ? 'bg-blue-600 animate-pulse' : 'bg-[#9E3039]'}`}></div>
+                    <h2 className={`text-base font-bold uppercase tracking-wider ${date === '2026-02-09' ? 'text-blue-700' : 'text-slate-600'}`}>
+                      {formatDateLatvian(date)}
+                    </h2>
+                  </div>
+
+                  <div className="space-y-3">
+                    {processedSchedule[date].map(event => (
+                      <div 
+                        key={event.id}
+                        onClick={() => setSelectedEvent(event)}
+                        className={`group bg-white rounded-xl p-4 shadow-sm border transition-all cursor-pointer relative overflow-hidden hover:shadow-md ${
+                          event.isHighlight ? 'border-l-4 border-l-[#9E3039]' : 'border-slate-200'
+                        }`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-center space-x-4 overflow-hidden">
+                            {/* Ikona */}
+                            <div className={`h-11 w-11 rounded-full flex items-center justify-center shrink-0 ${
+                              event.isHighlight ? 'bg-red-50 text-[#9E3039]' : 'bg-slate-50 text-slate-400'
+                            }`}>
+                              <SportaIkona sport={event.sport} className="w-5 h-5" />
+                            </div>
+                            
+                            {/* Info */}
+                            <div className="min-w-0 pr-2">
+                              <div className="flex items-center space-x-2 mb-0.5">
+                                 <span className="text-[10px] font-bold text-slate-500 uppercase bg-slate-100 px-1.5 py-0.5 rounded">
+                                   {event.sport}
+                                 </span>
+                                 {event.isHighlight && (
+                                   <span className="flex items-center text-[10px] font-bold text-amber-600">
+                                     <Star className="w-3 h-3 mr-1 fill-current" /> SVARĪGI
+                                   </span>
+                                 )}
+                              </div>
+                              <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-tight group-hover:text-[#9E3039] transition-colors">
+                                {event.event}
+                              </h3>
+                              <div className="text-xs text-slate-500 mt-1 truncate flex items-center">
+                                <Users className="w-3 h-3 mr-1" />
+                                {event.athletes}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Laiks */}
+                          <div className="flex items-center space-x-3 shrink-0 pl-2">
+                             <div className="text-right">
+                               <div className="text-lg font-bold font-mono text-slate-800">{event.time}</div>
+                               {event.status === 'Pabeigts' ? (
+                                  <div className="text-[10px] uppercase font-bold text-slate-400">Beidzies</div>
+                               ) : (
+                                  <div className="text-[10px] uppercase font-bold text-slate-400">TV: {event.channel}</div>
+                               )}
+                             </div>
+                             <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-[#9E3039]" />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              
+              {Object.keys(processedSchedule).length === 0 && (
+                 <div className="text-center py-12 text-slate-400">
+                   Nav atrasti notikumi šajā kategorijā.
+                 </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'roster' && (
+          <div className="animate-fade-in space-y-4">
+             <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+               <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center">
+                 <Flag className="w-5 h-5 mr-2 text-[#9E3039]" />
+                 Latvijas Komandas Līderi
+               </h2>
+               
+               <div className="grid gap-4 sm:grid-cols-2">
+                 <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                   <div className="font-bold text-[#9E3039] mb-1">Hokejs</div>
+                   <div className="text-sm font-medium">Elvis Merzļikins</div>
+                   <div className="text-xs text-slate-500">Vārtsargs (Columbus Blue Jackets)</div>
+                   <div className="mt-2 text-sm font-medium">Kaspars Daugaviņš</div>
+                   <div className="text-xs text-slate-500">Kapteinis</div>
+                 </div>
+
+                 <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                   <div className="font-bold text-[#9E3039] mb-1">Kamaniņas</div>
+                   <div className="text-sm font-medium">Kristers Aparjods</div>
+                   <div className="text-xs text-slate-500">Vīriešu vieninieki</div>
+                   <div className="mt-2 text-sm font-medium">Bots / Plūme</div>
+                   <div className="text-xs text-slate-500">Divnieku ekipāža</div>
+                 </div>
+
+                 <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                   <div className="font-bold text-[#9E3039] mb-1">Biatlons</div>
+                   <div className="text-sm font-medium">Andrejs Rastorgujevs</div>
+                   <div className="text-xs text-slate-500">Līderis</div>
+                   <div className="mt-2 text-sm font-medium">Baiba Bendika</div>
+                   <div className="text-xs text-slate-500">Līdere</div>
+                 </div>
+
+                 <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                   <div className="font-bold text-[#9E3039] mb-1">Citi Sporta Veidi</div>
+                   <div className="text-sm font-medium">Dženifera Ģērmane</div>
+                   <div className="text-xs text-slate-500">Kalnu slēpošana (Slaloms)</div>
+                   <div className="mt-2 text-sm font-medium">Deniss Vasiļjevs</div>
+                   <div className="text-xs text-slate-500">Daiļslidošana</div>
+                 </div>
+               </div>
+             </div>
+          </div>
+        )}
+
+      </main>
+
+      {/* Detalizētā skata logs */}
+      {selectedEvent && (
+        <SacensibuCentrs event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+      )}
+
+    </div>
+  );
+};
+
+export default LatviaOlympicsApp;
