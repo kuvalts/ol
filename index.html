@@ -8,36 +8,29 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Import Map to handle React & Icons imports -->
+    <!-- Import Map -->
     <script type="importmap">
     {
         "imports": {
             "react": "https://esm.sh/react@18.2.0",
             "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-            "lucide-react": "https://esm.sh/lucide-react@0.330.0"
+            "lucide-react": "https://esm.sh/lucide-react@0.330.0",
+            "canvas-confetti": "https://esm.sh/canvas-confetti@1.6.0"
         }
     }
     </script>
 
-    <!-- Babel for parsing JSX in browser -->
+    <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
-        /* Custom scrollbar hiding utility */
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-        }
-        .scrollbar-hide {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         @keyframes fade-in {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .animate-fade-in {
-            animation: fade-in 0.3s ease-out forwards;
-        }
+        .animate-fade-in { animation: fade-in 0.3s ease-out forwards; }
     </style>
 </head>
 <body class="bg-slate-100">
@@ -49,14 +42,13 @@
         import { 
           Trophy, Calendar, Clock, MapPin, Users, ChevronRight, X, 
           Info, Tv, ExternalLink, Shield, Target, Wind, Snowflake, 
-          Flame, Timer, Star, Flag, Link, Video
+          Flame, Timer, Star, Flag, Medal, CheckCircle
         } from 'lucide-react';
+        import confetti from 'canvas-confetti';
 
-        /**
-         * DATI (DATA) - PĀRBAUDĪTS UN LABOTS GRAFIKS
-         */
+        // --- DATI ---
         const LATVIJAS_GRAFIKS = [
-          // --- 9. FEBRUĀRIS (PIRMDIENA) ---
+          // --- 9. FEBRUĀRIS (PAGĀTNE) ---
           {
             id: 'luge-train-9',
             sport: 'Kamaniņas',
@@ -66,49 +58,26 @@
             venue: 'Cortina Sliding Centre',
             status: 'Pabeigts',
             channel: '-',
-            athletes: 'Elīna Ieva Bota, Kendija Aparjode',
-            details: 'Treniņbraucieni ir noslēgušies. Elīna Ieva Bota uzrādīja stabilu sniegumu, ierindojoties TOP 10 abos braucienos.',
+            athletes: 'Elīna Ieva Vītola, Kendija Aparjode',
+            details: 'Treniņbraucieni noslēgušies.',
+            result: 'Treniņš',
             isHighlight: false
           },
-          // --- 10. FEBRUĀRIS (OTRDIENA) ---
-          {
-            id: 'xc-sprint-qual',
-            sport: 'Distanču Slēpošana',
-            event: 'Sprints (Brīvais stils) - Kvalifikācija',
-            date: '2026-02-10',
-            time: '10:15',
-            venue: 'Val di Fiemme',
-            status: 'Gaidāms',
-            channel: 'LTV7',
-            athletes: 'Patrīcija Eiduka, Raimo Vīgants, Lauris Kaparkalējs',
-            details: 'Kvalifikācija ir kritiska - tikai 30 ātrākie iekļūst izslēgšanas spēlēs. Patrīcija Eiduka šosezon Pasaules kausā sprintā regulāri iekļūst TOP 20.',
-            isHighlight: false
-          },
-          {
-            id: 'st-1000m',
-            sport: 'Šorttreks',
-            event: 'Vīrieši 1000m - Priekšsacīkstes',
-            date: '2026-02-10',
-            time: '11:30',
-            venue: 'Milan Forum',
-            status: 'Gaidāms',
-            channel: 'LTV7 / Eurosport',
-            athletes: 'Roberts Krūzbergs',
-            details: 'Roberts Krūzbergs ir viens no pretendentiem uz augstu vietu. Šajā disciplīnā svarīga ir ne tikai ātrums, bet arī taktika.',
-            isHighlight: true
-          },
+
+          // --- 10. FEBRUĀRIS (ŠODIEN - REZULTĀTI) ---
           {
             id: 'xc-sprint-final',
             sport: 'Distanču Slēpošana',
-            event: 'Sprints (Brīvais stils) - Fināli',
+            event: 'Sprints (Brīvais stils) - Kvalifikācija/Fināli',
             date: '2026-02-10',
             time: '12:45',
             venue: 'Val di Fiemme',
-            status: 'Gaidāms',
+            status: 'Pabeigts',
             channel: 'LTV7',
-            athletes: 'Ja kvalificēsies (Eiduka/Vīgants)',
-            details: 'Izslēgšanas braucieni notiek ik pēc dažām minūtēm. Tā ir milzīga slodze, kur izšķiroša būs slēpju sagatavošana un fiziskā izturība.',
-            isHighlight: true
+            athletes: 'Patrīcija Eiduka',
+            details: 'Patrīcija startēja kvalifikācijā, bet neiekļuva izšķirošajās cīņās par medaļām.',
+            result: '23. vieta',
+            isHighlight: false
           },
           {
             id: 'bia-m-20k',
@@ -116,11 +85,12 @@
             event: 'Vīrieši 20km Individuālā distance',
             date: '2026-02-10',
             time: '15:30',
-            venue: 'Antholz (Anterselva)',
-            status: 'Gaidāms',
+            venue: 'Antholz',
+            status: 'Pabeigts',
             channel: 'LTV7',
             athletes: 'Andrejs Rastorgujevs, Renārs Birkentāls',
-            details: 'Visgrūtākā biatlona disciplīna. 4 šaušanas. Par katru kļūdu tiek pievienota 1 minūte pie laika. Rastorgujevs šeit var cīnīties par medaļām.',
+            details: 'Diemžēl neveiksmes šaušanā liedza Andrejam cīnīties par augstām vietām. Vairākas kļūdas (soda minūtes) nobīdīja viņu uz leju.',
+            result: '41. vieta (A. Rastorgujevs)', // LABOTS
             isHighlight: true
           },
           {
@@ -130,37 +100,42 @@
             date: '2026-02-10',
             time: '17:00',
             venue: 'Milan Forum',
-            status: 'Gaidāms',
+            status: 'Pabeigts',
             channel: 'LTV7',
             athletes: 'Deniss Vasiļjevs',
-            details: 'Deniss Vasiļjevs ir pazīstams ar savu artistiskumu. Jāizpilda obligātie elementi bez kritieniem, lai kvalificētos izvēles programmai.',
-            isHighlight: true
+            details: 'Deniss ir kvalificējies izvēles programmai, kas notiks 12. februārī.',
+            result: 'Kvalificējies',
+            isHighlight: false
           },
           {
             id: 'luge-w-final',
             sport: 'Kamaniņas',
-            event: 'Sievietes - 3. un 4. brauciens (Medaļas)',
+            event: 'Sievietes - 4. brauciens (Fināls)',
             date: '2026-02-10',
-            time: '18:00',
+            time: '18:00', 
             venue: 'Cortina Sliding Centre',
-            status: 'Gaidāms',
+            status: 'Pabeigts',
             channel: 'LTV7',
-            athletes: 'Elīna Ieva Bota, Kendija Aparjode',
-            details: 'Izšķirošie braucieni par medaļām.',
-            isHighlight: true
+            athletes: 'Elīna Ieva Vītola',
+            details: 'LATVIJAI PIRMA MEDAĻA! Elīna Ieva Vītola izcīna sudrabu, piekāpjoties tikai vācietei Jūlijai Taubicai.',
+            result: 'SUDRABS 🥈',
+            isHighlight: true,
+            isMedal: true,
+            medalType: 'silver'
           },
-          // --- 11. FEBRUĀRIS (TREŠDIENA) ---
+
+          // --- 11. FEBRUĀRIS (RĪT) ---
           {
             id: 'luge-doubles',
             sport: 'Kamaniņas',
             event: 'Divnieki - 1. un 2. brauciens (Medaļas)',
             date: '2026-02-11',
             time: '14:00',
-            venue: 'Cortina Sliding Centre',
+            venue: 'Cortina',
             status: 'Gaidāms',
             channel: 'LTV7',
-            athletes: 'M. Bots / R. Plūme, E. Ševics-Mikeļševics / L. Krasts',
-            details: 'Latvijas lielākā cerība uz medaļu. Bots/Plūme ir Pasaules kausa līderu vidū un Eiropas čempioni.',
+            athletes: 'M. Bots / R. Plūme',
+            details: 'Bots un Plūme ir vieni no galvenajiem favorītiem uz zeltu.',
             isHighlight: true
           },
           {
@@ -169,38 +144,26 @@
             event: 'Sievietes 15km Individuālā distance',
             date: '2026-02-11',
             time: '15:30',
-            venue: 'Antholz (Anterselva)',
+            venue: 'Antholz',
             status: 'Gaidāms',
             channel: 'LTV7',
-            athletes: 'Baiba Bendika, Sanita Buliņa',
-            details: 'Baiba Bendika ir ātra slēpojumā, galvenais uzdevums - stabilitāte šaušanā 4 ugunslīnijās.',
+            athletes: 'Baiba Bendika',
+            details: 'Starts 15:30. Baibai jāšauj precīzi, lai cīnītos par TOP 20.',
             isHighlight: false
           },
+
           // --- 12. FEBRUĀRIS (CETURTDIENA) ---
-          {
-            id: 'skel-m-12',
-            sport: 'Skeletons',
-            event: 'Vīrieši - 1. un 2. brauciens',
-            date: '2026-02-12',
-            time: '10:00',
-            venue: 'Cortina Sliding Centre',
-            status: 'Gaidāms',
-            channel: 'LTV7',
-            athletes: 'Emīls Indriksons',
-            details: 'Pirmā sacensību diena skeletonā. Indriksons ir jaunās paaudzes talants.',
-            isHighlight: false
-          },
           {
             id: 'luge-relay',
             sport: 'Kamaniņas',
             event: 'Komandu Stafete (Medaļas)',
             date: '2026-02-12',
             time: '15:00',
-            venue: 'Cortina Sliding Centre',
+            venue: 'Cortina',
             status: 'Gaidāms',
             channel: 'LTV7',
-            athletes: 'Latvijas Izlase (Sieviete, Vīrietis, Divnieks)',
-            details: 'Viena no skatāmākajām disciplīnām. Latvija vēsturiski šeit vienmēr cīnās par pjedestālu (Bronza Pekinā 2022).',
+            athletes: 'Latvijas Izlase',
+            details: 'Komandā būs sudraba medaļniece Vītola, labākais vīrietis un divnieks.',
             isHighlight: true
           },
           {
@@ -222,80 +185,15 @@
             event: 'Latvija vs ASV',
             date: '2026-02-12',
             time: '22:10',
-            venue: 'Milāna (PalaItalia)',
+            venue: 'Milāna',
             status: 'Gaidāms',
             channel: 'LTV7',
             athletes: 'Latvijas Izlase',
-            details: 'Pirmā spēle grupā pret spēcīgo ASV izlasi (NHL spēlētāji). Vārtos sagaidāms Elvis Merzļikins.',
+            details: 'Grupas C pirmā spēle.',
             isHighlight: true
           },
-          // --- 13. FEBRUĀRIS (PIEKTDIENA) ---
-          {
-            id: 'skel-m-34',
-            sport: 'Skeletons',
-            event: 'Vīrieši - 3. un 4. brauciens (Medaļas)',
-            date: '2026-02-13',
-            time: '10:00',
-            venue: 'Cortina Sliding Centre',
-            status: 'Gaidāms',
-            channel: 'LTV7',
-            athletes: 'Emīls Indriksons',
-            details: 'Izšķirošie braucieni skeletonā.',
-            isHighlight: true
-          },
-          {
-            id: 'xc-10k-classic',
-            sport: 'Distanču Slēpošana',
-            event: 'Vīrieši 15km Klasika',
-            date: '2026-02-13',
-            time: '11:00',
-            venue: 'Val di Fiemme',
-            status: 'Gaidāms',
-            channel: 'LTV7',
-            athletes: 'Raimo Vīgants',
-            details: 'Intervāla starts klasiskajā stilā. Raimo Vīgants ir spēcīgs tieši klasiskajā stilā.',
-            isHighlight: false
-          },
-          {
-            id: 'skel-w-12',
-            sport: 'Skeletons',
-            event: 'Sievietes - 1. un 2. brauciens',
-            date: '2026-02-13',
-            time: '14:30',
-            venue: 'Cortina Sliding Centre',
-            status: 'Gaidāms',
-            channel: 'LTV7',
-            athletes: 'Marta Andžāne',
-            details: '',
-            isHighlight: false
-          },
-          // --- 14. FEBRUĀRIS (SESTDIENA) ---
-          {
-            id: 'alp-slalom-w',
-            sport: 'Kalnu Slēpošana',
-            event: 'Sievietes - Slaloms',
-            date: '2026-02-14',
-            time: '10:30',
-            venue: 'Cortina',
-            status: 'Gaidāms',
-            channel: 'LTV7',
-            athletes: 'Dženifera Ģērmane',
-            details: 'Dženifera Ģērmane ir fenomenāla slalomiste. Šī ir viņas lielākā iespēja izcīnīt augstu vietu Olimpiādē.',
-            isHighlight: true
-          },
-          {
-            id: 'bia-sprint-m',
-            sport: 'Biatlons',
-            event: 'Vīrieši 10km Sprints',
-            date: '2026-02-14',
-            time: '13:00',
-            venue: 'Antholz',
-            status: 'Gaidāms',
-            channel: 'LTV7',
-            athletes: 'Andrejs Rastorgujevs',
-            details: 'Dinamiskākā biatlona disciplīna. 2 šaušanas. Andrejam šī disciplīna parasti padodas.',
-            isHighlight: true
-          },
+
+           // --- 14. FEBRUĀRIS (SESTDIENA) ---
           {
             id: 'hock-ger',
             sport: 'Hokejs',
@@ -306,34 +204,22 @@
             status: 'Gaidāms',
             channel: 'LTV7',
             athletes: 'Latvijas Izlase',
-            details: 'Iespējams, izšķirošā spēle par vietu grupā. Latvija pret Vāciju vienmēr ir principiāls duelis. Uzvarētājs visticamāk izvairīsies no spēcīgākajiem pretiniekiem kvalifikācijas kārtā.',
+            details: 'Spēle pret Vāciju.',
             isHighlight: true
           },
-          {
-            id: 'skel-w-34',
-            sport: 'Skeletons',
-            event: 'Sievietes - 3. un 4. brauciens (Medaļas)',
-            date: '2026-02-14',
-            time: '14:30',
-            venue: 'Cortina Sliding Centre',
-            status: 'Gaidāms',
-            channel: 'LTV7',
-            athletes: 'Marta Andžāne',
-            details: 'Izšķirošie braucieni dāmām.',
-            isHighlight: false
-          },
-          // --- 15. FEBRUĀRIS (SVĒTDIENA) ---
+          
+           // --- 15. FEBRUĀRIS (SVĒTDIENA) ---
           {
             id: 'skel-mixed',
             sport: 'Skeletons',
-            event: 'Jauktā Komandu Stafete (Jaunums)',
+            event: 'Jauktā Komandu Stafete',
             date: '2026-02-15',
             time: '18:00',
-            venue: 'Cortina Sliding Centre',
+            venue: 'Cortina',
             status: 'Gaidāms',
             channel: 'LTV7',
             athletes: 'Latvijas Komanda',
-            details: 'Jauna disciplīna olimpiskajās spēlēs. Piedalās viens vīrietis un viena sieviete.',
+            details: 'Jauna disciplīna.',
             isHighlight: true
           },
           {
@@ -346,9 +232,10 @@
             status: 'Gaidāms',
             channel: 'LTV7',
             athletes: 'Latvijas Izlase',
-            details: 'Noslēdzošā grupas spēle. Obligāti jāuzvar, lai nodrošinātu labāku pozīciju izslēgšanas spēlēm. Spēle notiek svētdienas vakarā.',
+            details: 'Grupas pēdējā spēle.',
             isHighlight: true
           },
+
           // --- 16. FEBRUĀRIS (PIRMDIENA) ---
           {
             id: 'bob-2man-12',
@@ -356,13 +243,14 @@
             event: 'Divnieki - 1. un 2. brauciens',
             date: '2026-02-16',
             time: '10:00',
-            venue: 'Cortina Sliding Centre',
+            venue: 'Cortina',
             status: 'Gaidāms',
             channel: 'LTV7',
-            athletes: 'Emīls Cipulis, Jēkabs Kalenda',
-            details: 'Sākas bobsleja sacensības divniekiem. Emīls Cipulis ir komandas pirmais numurs.',
+            athletes: 'Cipulis / Kalenda',
+            details: 'Startē bobsleja divnieki.',
             isHighlight: false
           },
+
           // --- 17. FEBRUĀRIS (OTRDIENA) ---
           {
             id: 'bob-2man-34',
@@ -370,27 +258,15 @@
             event: 'Divnieki - 3. un 4. brauciens (Medaļas)',
             date: '2026-02-17',
             time: '10:00',
-            venue: 'Cortina Sliding Centre',
+            venue: 'Cortina',
             status: 'Gaidāms',
             channel: 'LTV7',
-            athletes: 'Emīls Cipulis, Jēkabs Kalenda',
-            details: 'Medaļu sadale bobsleja divniekos.',
+            athletes: 'Cipulis / Kalenda',
+            details: 'Medaļu sadale bobslejā.',
             isHighlight: true
           },
-          // --- 18. FEBRUĀRIS (TREŠDIENA) ---
-          {
-            id: 'xc-team-sprint',
-            sport: 'Distanču Slēpošana',
-            event: 'Komandu Sprints (Klasika)',
-            date: '2026-02-18',
-            time: '10:45',
-            venue: 'Val di Fiemme',
-            status: 'Gaidāms',
-            channel: 'LTV7',
-            athletes: 'Latvijas Komanda',
-            details: 'Komandu sprintā svarīga ir maiņu nodošana un taktiskā cīņa.',
-            isHighlight: false
-          },
+          
+           // --- 18. FEBRUĀRIS (TREŠDIENA) ---
           {
             id: 'bia-relay-m',
             sport: 'Biatlons',
@@ -401,9 +277,10 @@
             status: 'Gaidāms',
             channel: 'LTV7',
             athletes: 'Latvijas Izlase',
-            details: 'Stafetē katram sportistam ir trīs rezerves patronas katrā šaušanā. Latvijas mērķis ir labāko desmitnieks.',
+            details: 'Vīriešu stafete.',
             isHighlight: false
           },
+
           // --- 21. FEBRUĀRIS (SESTDIENA) ---
           {
             id: 'bob-4man-12',
@@ -411,11 +288,11 @@
             event: 'Četrinieki - 1. un 2. brauciens',
             date: '2026-02-21',
             time: '10:00',
-            venue: 'Cortina Sliding Centre',
+            venue: 'Cortina',
             status: 'Gaidāms',
             channel: 'LTV7',
             athletes: 'E. Cipuļa ekipāža',
-            details: 'Latvijas "karaliskā" disciplīna. Četriniekos Latvija vienmēr ir bijusi pasaules elitē.',
+            details: 'Starts bobsleja četriniekiem.',
             isHighlight: false
           },
           {
@@ -427,10 +304,11 @@
             venue: 'Antholz',
             status: 'Gaidāms',
             channel: 'LTV7',
-            athletes: 'Andrejs Rastorgujevs (ja kvalificējas)',
-            details: 'Pēdējā biatlona sacensība, kurā piedalās tikai 30 labākie.',
+            athletes: 'Rastorgujevs (ja kvalif.)',
+            details: 'Pēdējais starts biatlonā.',
             isHighlight: true
           },
+
           // --- 22. FEBRUĀRIS (SVĒTDIENA) ---
           {
             id: 'bob-4man-34',
@@ -438,25 +316,12 @@
             event: 'Četrinieki - Fināli (Medaļas)',
             date: '2026-02-22',
             time: '10:00',
-            venue: 'Cortina Sliding Centre',
+            venue: 'Cortina',
             status: 'Gaidāms',
             channel: 'LTV7',
             athletes: 'E. Cipuļa ekipāža',
-            details: 'Noslēdzošā olimpisko spēļu diena un cīņa par medaļām bobslejā. Vēsturiski pēdējā dienā Latvija bieži ir iepriecinājusi fanus.',
+            details: 'Olimpiādes noslēguma sacensības.',
             isHighlight: true
-          },
-          {
-            id: 'xc-50k',
-            sport: 'Distanču Slēpošana',
-            event: 'Vīrieši 50km Masu starts',
-            date: '2026-02-22',
-            time: '11:00',
-            venue: 'Val di Fiemme',
-            status: 'Gaidāms',
-            channel: 'LTV7',
-            athletes: 'Raimo Vīgants',
-            details: 'Olimpiādes maratons. 50km ir pārbaudījums ne tikai ķermenim, bet arī garam.',
-            isHighlight: false
           }
         ];
 
@@ -474,26 +339,18 @@
           }
         };
 
-        const DetaluRinda = ({ icon: Icon, label, value }) => (
-          <div className="flex items-start space-x-3 py-3 border-b border-slate-100 last:border-0">
-            <Icon className="w-5 h-5 text-slate-400 mt-0.5 shrink-0" />
-            <div>
-              <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">{label}</div>
-              <div className="text-sm font-medium text-slate-800 leading-relaxed">{value}</div>
-            </div>
-          </div>
-        );
-
-        // --- MODĀLAIS LOGS (MATCH CENTER) ---
-
         const SacensibuCentrs = ({ event, onClose }) => {
           if (!event) return null;
 
           return (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-              <div className="bg-white w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl flex flex-col">
+              <div className="bg-white w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl flex flex-col relative overflow-hidden">
                 
-                {/* Galvene */}
+                {/* Medaļas fona efekts */}
+                {event.isMedal && (
+                   <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-slate-300 via-slate-400 to-slate-300 animate-pulse z-20"></div>
+                )}
+
                 <div className="sticky top-0 z-10 bg-[#9E3039] text-white p-5 flex justify-between items-start">
                   <div>
                     <div className="flex items-center space-x-2 opacity-90 text-xs font-bold uppercase tracking-wider mb-1">
@@ -501,72 +358,54 @@
                     </div>
                     <h2 className="text-xl font-bold leading-tight pr-4">{event.event}</h2>
                   </div>
-                  <button 
-                    onClick={onClose}
-                    className="p-2 bg-white/20 hover:bg-white/30 rounded-full transition-colors"
-                  >
+                  <button onClick={onClose} className="p-2 bg-white/20 hover:bg-white/30 rounded-full">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
-
-                {/* Saturs */}
                 <div className="p-6">
                   
-                  {/* Galvenais Info */}
-                  <div className="bg-slate-50 rounded-xl p-4 mb-6 border border-slate-200 shadow-sm">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <div className="text-xs text-slate-500 uppercase font-bold mb-1">Datums & Laiks</div>
-                        <div className="flex items-center text-base font-bold text-slate-900">
-                          <Calendar className="w-4 h-4 mr-2 text-[#9E3039]" />
-                          {new Date(event.date).toLocaleDateString('lv-LV', { day: 'numeric', month: 'short' })}
+                  {/* REZULTĀTA KARTIŅA */}
+                  {event.result && (
+                    <div className={`p-4 rounded-xl border mb-6 text-center ${
+                        event.isMedal 
+                        ? 'bg-slate-50 border-slate-300 shadow-lg scale-105 transform transition-transform' 
+                        : 'bg-slate-50 border-slate-200'
+                    }`}>
+                        <div className="text-xs font-bold uppercase tracking-wider mb-1 opacity-60">
+                            {event.status === 'Pabeigts' ? 'Oficiālais Rezultāts' : 'Statuss'}
                         </div>
-                        <div className="flex items-center text-lg font-bold text-slate-900 mt-1">
-                          <Clock className="w-4 h-4 mr-2 text-[#9E3039]" />
-                          {event.time} <span className="text-xs text-slate-400 ml-1 font-normal">LV laiks</span>
+                        <div className={`text-3xl font-black ${event.isMedal ? 'text-slate-600' : 'text-slate-800'}`}>
+                            {event.result}
                         </div>
-                      </div>
-                      <div>
-                         <div className="text-xs text-slate-500 uppercase font-bold mb-1">Norises Vieta</div>
-                         <div className="flex items-start text-sm font-bold text-slate-900">
-                           <MapPin className="w-4 h-4 mr-2 text-[#9E3039] shrink-0 mt-0.5" />
-                           {event.venue}
-                         </div>
-                      </div>
+                        {event.isMedal && (
+                            <div className="text-xs font-bold text-slate-500 mt-1 animate-bounce">
+                                APSVEICAM ELĪNU! 🇱🇻
+                            </div>
+                        )}
                     </div>
-                  </div>
+                  )}
 
-                  {/* Detaļas */}
-                  <div className="space-y-1">
-                     <DetaluRinda 
-                       icon={Users} 
-                       label="Latvijas Sportisti" 
-                       value={event.athletes} 
-                     />
-                     <DetaluRinda 
-                       icon={Info} 
-                       label="Eksperta Komentārs / Apraksts" 
-                       value={event.details} 
-                     />
-                     <DetaluRinda 
-                       icon={Tv} 
-                       label="Tiešraide" 
-                       value={event.channel || "Nav info"} 
-                     />
-                     <DetaluRinda 
-                       icon={Shield} 
-                       label="Statuss" 
-                       value={event.status} 
-                     />
+                  <div className="space-y-4">
+                     <div className="flex items-center text-sm font-medium text-slate-700">
+                        <Clock className="w-4 h-4 mr-3 text-slate-400" />
+                        {event.time} (LV laiks)
+                     </div>
+                     <div className="flex items-center text-sm font-medium text-slate-700">
+                        <MapPin className="w-4 h-4 mr-3 text-slate-400" />
+                        {event.venue}
+                     </div>
+                     <div className="pt-2 border-t">
+                        <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Sportisti</div>
+                        <div className="font-medium">{event.athletes}</div>
+                     </div>
+                     <div>
+                        <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Komentārs</div>
+                        <div className="text-sm text-slate-600 leading-relaxed">{event.details}</div>
+                     </div>
                   </div>
-
                 </div>
-
-                {/* Kājene */}
-                <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-center rounded-b-2xl">
-                  <button onClick={onClose} className="text-slate-500 font-medium text-sm hover:text-slate-800">
-                    Aizvērt
-                  </button>
+                <div className="p-4 border-t bg-slate-50 flex justify-center rounded-b-2xl">
+                  <button onClick={onClose} className="text-slate-500 font-medium text-sm">Aizvērt</button>
                 </div>
               </div>
             </div>
@@ -579,58 +418,79 @@
           const [activeTab, setActiveTab] = useState('schedule');
           const [events, setEvents] = useState(LATVIJAS_GRAFIKS);
           const [selectedEvent, setSelectedEvent] = useState(null);
-          const [filterSport, setFilterSport] = useState('Visi');
+          const [medalNotification, setMedalNotification] = useState(true);
           
-          // Pašreizējais laiks
-          const [currentTime, setCurrentTime] = useState(new Date("2026-02-09T23:33:00"));
+          // LAIKS: Otrdiena, 10. Februāris, Vēls Vakars
+          const [currentTime, setCurrentTime] = useState(new Date("2026-02-10T23:15:00"));
+
+          // Pārbaudām, vai ir medaļa
+          const hasMedal = useMemo(() => events.some(e => e.isMedal), [events]);
+
+          // Confetti efekts ielādējoties, ja ir medaļa
+          useEffect(() => {
+            if (hasMedal) {
+                confetti({
+                    particleCount: 150,
+                    spread: 80,
+                    origin: { y: 0.6 },
+                    colors: ['#9E3039', '#ffffff', '#C0C0C0'] // Latvijas karogs + Sudrabs
+                });
+            }
+          }, [hasMedal]);
 
           useEffect(() => {
             const timer = setInterval(() => {
               setCurrentTime(prev => new Date(prev.getTime() + 60000));
-            }, 1000);
+            }, 60000);
             return () => clearInterval(timer);
           }, []);
 
-          // Sporta veidu saraksts
-          const sportsList = useMemo(() => {
-            const uniqueSports = [...new Set(LATVIJAS_GRAFIKS.map(item => item.sport))];
-            return ['Visi', ...uniqueSports];
-          }, []);
-
-          // Filtrēšana un Grupēšana
           const processedSchedule = useMemo(() => {
-            let filtered = events;
-            if (filterSport !== 'Visi') {
-              filtered = filtered.filter(e => e.sport === filterSport);
-            }
-            
-            // Kārtot pēc datuma un laika
-            filtered.sort((a, b) => new Date(a.date + 'T' + a.time) - new Date(b.date + 'T' + b.time));
-
-            const grouped = filtered.reduce((acc, item) => {
+            const sorted = [...events].sort((a, b) => new Date(a.date) - new Date(b.date));
+            const grouped = sorted.reduce((acc, item) => {
               if (!acc[item.date]) acc[item.date] = [];
               acc[item.date].push(item);
               return acc;
             }, {});
-
             return grouped;
-          }, [filterSport, events]);
+          }, [events]);
+
+          const results = useMemo(() => {
+             // Rādīt rezultātus, kas ir pabeigti VAI medaļu gadījumā
+             return events.filter(e => e.result && (e.status === 'Pabeigts' || e.isMedal)).reverse();
+          }, [events]);
 
           const formatDateLatvian = (dateStr) => {
             const date = new Date(dateStr);
-            const today = new Date("2026-02-09");
-            const tomorrow = new Date("2026-02-10");
+            const today = new Date("2026-02-10");
+            const tomorrow = new Date("2026-02-11");
             
-            if (date.toDateString() === today.toDateString()) return "Šodien, 9. februāris";
-            if (date.toDateString() === tomorrow.toDateString()) return "Rīt, 10. februāris";
-            
-            // Latvian formatting using Intl
+            if (date.toDateString() === today.toDateString()) return "Šodien, 10. februāris";
+            if (date.toDateString() === tomorrow.toDateString()) return "Rīt, 11. februāris";
             return new Intl.DateTimeFormat('lv-LV', { weekday: 'long', day: 'numeric', month: 'long' }).format(date);
           };
 
+          const isPast = (dateStr) => new Date(dateStr) < new Date("2026-02-10");
+
           return (
-            <div className="min-h-screen bg-slate-100 font-sans text-slate-900 pb-10">
+            <div className="min-h-screen bg-slate-100 font-sans text-slate-900 pb-20">
               
+              {/* MEDAĻAS BANERIS */}
+              {hasMedal && medalNotification && (
+                  <div className="bg-slate-200 text-slate-800 px-4 py-3 shadow-md flex justify-between items-center animate-fade-in relative overflow-hidden border-b-2 border-slate-300">
+                      <div className="absolute inset-0 bg-white/40 transform -skew-x-12 translate-x-full animate-[shimmer_2s_infinite]"></div>
+                      <div className="flex items-center font-bold z-10">
+                          <div className="bg-slate-300 p-1 rounded-full mr-2">
+                             <Medal className="w-5 h-5 text-slate-600" />
+                          </div>
+                          <span>LATVIJAI SUDRABS! ELĪNA IEVA VĪTOLA! 🥈</span>
+                      </div>
+                      <button onClick={() => setMedalNotification(false)} className="p-1 hover:bg-black/10 rounded-full z-10">
+                          <X className="w-4 h-4" />
+                      </button>
+                  </div>
+              )}
+
               {/* Galvene */}
               <header className="bg-gradient-to-r from-[#9E3039] to-[#7a242b] text-white shadow-lg sticky top-0 z-40">
                 <div className="max-w-3xl mx-auto px-4 py-4">
@@ -654,71 +514,48 @@
 
                   {/* Navigācija */}
                   <div className="flex mt-4 space-x-1 overflow-x-auto scrollbar-hide">
-                    <button
-                      onClick={() => setActiveTab('schedule')}
-                      className={`px-4 py-2 rounded-t-lg text-sm font-bold transition-all ${
-                        activeTab === 'schedule' 
-                          ? 'bg-slate-100 text-[#9E3039]' 
-                          : 'text-white/70 hover:bg-white/10'
-                      }`}
-                    >
-                      Kalendārs
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('roster')}
-                      className={`px-4 py-2 rounded-t-lg text-sm font-bold transition-all ${
-                        activeTab === 'roster' 
-                          ? 'bg-slate-100 text-[#9E3039]' 
-                          : 'text-white/70 hover:bg-white/10'
-                      }`}
-                    >
-                      Izlases Sastāvs
-                    </button>
-                     <button
-                      onClick={() => setActiveTab('info')}
-                      className={`px-4 py-2 rounded-t-lg text-sm font-bold transition-all ${
-                        activeTab === 'info' 
-                          ? 'bg-slate-100 text-[#9E3039]' 
-                          : 'text-white/70 hover:bg-white/10'
-                      }`}
-                    >
-                      Noderīgi
-                    </button>
+                    {['schedule', 'results', 'roster', 'info'].map(tab => (
+                        <button
+                          key={tab}
+                          onClick={() => setActiveTab(tab)}
+                          className={`px-4 py-2 rounded-t-lg text-sm font-bold transition-all whitespace-nowrap relative ${
+                            activeTab === tab 
+                              ? 'bg-slate-100 text-[#9E3039]' 
+                              : 'text-white/70 hover:bg-white/10'
+                          }`}
+                        >
+                          {tab === 'schedule' ? 'Kalendārs' : 
+                           tab === 'results' ? 'Panākumi' : 
+                           tab === 'roster' ? 'Sastāvs' : 'Noderīgi'}
+                           
+                           {tab === 'results' && hasMedal && (
+                               <span className="absolute top-1 right-1 w-2 h-2 bg-slate-300 rounded-full animate-ping"></span>
+                           )}
+                        </button>
+                    ))}
                   </div>
                 </div>
               </header>
 
               <main className="max-w-3xl mx-auto px-4 py-6">
                 
+                {/* --- KALENDĀRS --- */}
                 {activeTab === 'schedule' && (
-                  <div className="animate-fade-in">
-                    {/* Filtri */}
-                    <div className="mb-6 flex space-x-2 overflow-x-auto pb-2 scrollbar-hide">
-                      {sportsList.map(sport => (
-                        <button
-                          key={sport}
-                          onClick={() => setFilterSport(sport)}
-                          className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all border ${
-                            filterSport === sport 
-                              ? 'bg-[#9E3039] text-white border-[#9E3039] shadow-md' 
-                              : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
-                          }`}
-                        >
-                          {sport}
-                        </button>
-                      ))}
-                    </div>
+                  <div className="animate-fade-in space-y-8">
+                    {Object.keys(processedSchedule).map(date => {
+                       const isToday = date === '2026-02-10';
+                       const isHistory = isPast(date);
 
-                    {/* Saraksts */}
-                    <div className="space-y-8">
-                      {Object.keys(processedSchedule).map(date => (
-                        <div key={date}>
-                          {/* Datuma atdalītājs */}
-                          <div className="sticky top-[130px] sm:top-[85px] z-30 py-2 bg-slate-100/95 backdrop-blur border-b border-slate-200 mb-4 flex items-center">
-                            <div className={`h-2.5 w-2.5 rounded-full mr-3 ${date === '2026-02-09' ? 'bg-blue-600 animate-pulse' : 'bg-[#9E3039]'}`}></div>
-                            <h2 className={`text-base font-bold uppercase tracking-wider ${date === '2026-02-09' ? 'text-blue-700' : 'text-slate-600'}`}>
+                       return (
+                        <div key={date} className={isHistory ? 'opacity-60 grayscale-[0.5]' : ''}>
+                          <div className={`sticky top-[130px] sm:top-[85px] z-30 py-2 backdrop-blur border-b mb-4 flex items-center ${
+                              isToday ? 'bg-blue-50/95 border-blue-200 text-blue-800' : 'bg-slate-100/95 border-slate-200 text-slate-600'
+                          }`}>
+                            <div className={`h-2.5 w-2.5 rounded-full mr-3 ${isToday ? 'bg-blue-600 animate-pulse' : 'bg-slate-400'}`}></div>
+                            <h2 className="text-base font-bold uppercase tracking-wider">
                               {formatDateLatvian(date)}
                             </h2>
+                            {isToday && <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-bold">ŠODIEN</span>}
                           </div>
 
                           <div className="space-y-3">
@@ -727,28 +564,28 @@
                                 key={event.id}
                                 onClick={() => setSelectedEvent(event)}
                                 className={`group bg-white rounded-xl p-4 shadow-sm border transition-all cursor-pointer relative overflow-hidden hover:shadow-md ${
+                                  event.isMedal ? 'border-slate-400 ring-1 ring-slate-400 bg-slate-50' : 
                                   event.isHighlight ? 'border-l-4 border-l-[#9E3039]' : 'border-slate-200'
                                 }`}
                               >
                                 <div className="flex justify-between items-center">
                                   <div className="flex items-center space-x-4 overflow-hidden">
-                                    {/* Ikona */}
                                     <div className={`h-11 w-11 rounded-full flex items-center justify-center shrink-0 ${
+                                      event.isMedal ? 'bg-slate-200 text-slate-600' :
                                       event.isHighlight ? 'bg-red-50 text-[#9E3039]' : 'bg-slate-50 text-slate-400'
                                     }`}>
-                                      <SportaIkona sport={event.sport} className="w-5 h-5" />
+                                      {event.isMedal ? <Medal className="w-6 h-6 animate-pulse" /> : <SportaIkona sport={event.sport} className="w-5 h-5" />}
                                     </div>
                                     
-                                    {/* Info */}
                                     <div className="min-w-0 pr-2">
                                       <div className="flex items-center space-x-2 mb-0.5">
                                          <span className="text-[10px] font-bold text-slate-500 uppercase bg-slate-100 px-1.5 py-0.5 rounded">
                                            {event.sport}
                                          </span>
-                                         {event.isHighlight && (
-                                           <span className="flex items-center text-[10px] font-bold text-amber-600">
-                                             <Star className="w-3 h-3 mr-1 fill-current" /> SVARĪGI
-                                           </span>
+                                         {event.isMedal && (
+                                            <span className="flex items-center text-[10px] font-bold text-slate-700 bg-slate-200 px-1.5 py-0.5 rounded">
+                                              SUDRABS!
+                                            </span>
                                          )}
                                       </div>
                                       <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-tight group-hover:text-[#9E3039] transition-colors">
@@ -761,15 +598,16 @@
                                     </div>
                                   </div>
 
-                                  {/* Laiks */}
-                                  <div className="flex items-center space-x-3 shrink-0 pl-2">
-                                     <div className="text-right">
-                                       <div className="text-lg font-bold font-mono text-slate-800">{event.time}</div>
-                                       {event.status === 'Pabeigts' ? (
-                                          <div className="text-[10px] uppercase font-bold text-slate-400">Beidzies</div>
+                                  <div className="flex items-center space-x-3 shrink-0 pl-2 text-right">
+                                     <div>
+                                       {event.result ? (
+                                           <div className={`text-sm font-bold ${event.isMedal ? 'text-slate-600 text-base' : 'text-slate-800'}`}>{event.result}</div>
                                        ) : (
-                                          <div className="text-[10px] uppercase font-bold text-slate-400">TV: {event.channel}</div>
+                                           <div className="text-lg font-bold font-mono text-slate-800">{event.time}</div>
                                        )}
+                                       <div className="text-[10px] uppercase font-bold text-slate-400">
+                                           {event.status === 'Pabeigts' ? 'Beidzies' : 'TV: ' + event.channel}
+                                       </div>
                                      </div>
                                      <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-[#9E3039]" />
                                   </div>
@@ -778,107 +616,60 @@
                             ))}
                           </div>
                         </div>
-                      ))}
-                      
-                      {Object.keys(processedSchedule).length === 0 && (
-                         <div className="text-center py-12 text-slate-400">
-                           Nav atrasti notikumi šajā kategorijā.
-                         </div>
-                      )}
-                    </div>
+                    )})}
                   </div>
                 )}
 
-                {activeTab === 'roster' && (
+                {/* --- PANĀKUMI (REZULTĀTI) --- */}
+                {activeTab === 'results' && (
                   <div className="animate-fade-in space-y-4">
-                     <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                       <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center">
-                         <Flag className="w-5 h-5 mr-2 text-[#9E3039]" />
-                         Latvijas Komandas Līderi
-                       </h2>
-                       
-                       <div className="grid gap-4 sm:grid-cols-2">
-                         <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-                           <div className="font-bold text-[#9E3039] mb-1">Hokejs</div>
-                           <div className="text-sm font-medium">Elvis Merzļikins</div>
-                           <div className="text-xs text-slate-500">Vārtsargs (Columbus Blue Jackets)</div>
-                           <div className="mt-2 text-sm font-medium">Kaspars Daugaviņš</div>
-                           <div className="text-xs text-slate-500">Kapteinis</div>
-                         </div>
+                     <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 text-center">
+                        <Trophy className="w-12 h-12 text-[#9E3039] mx-auto mb-2" />
+                        <h2 className="text-xl font-bold text-slate-800">Latvijas Rezultāti</h2>
+                        <div className="text-3xl font-bold text-slate-900 mt-4 flex justify-center gap-4">
+                            <div className="text-center">
+                                <span className="block text-yellow-500">0</span>
+                                <span className="text-xs text-slate-400 font-normal uppercase">Zelts</span>
+                            </div>
+                            <div className="text-center">
+                                <span className="block text-slate-500">1</span>
+                                <span className="text-xs text-slate-400 font-normal uppercase">Sudrabs</span>
+                            </div>
+                            <div className="text-center">
+                                <span className="block text-amber-700">0</span>
+                                <span className="text-xs text-slate-400 font-normal uppercase">Bronza</span>
+                            </div>
+                        </div>
+                     </div>
 
-                         <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-                           <div className="font-bold text-[#9E3039] mb-1">Kamaniņas</div>
-                           <div className="text-sm font-medium">Kristers Aparjods</div>
-                           <div className="text-xs text-slate-500">Vīriešu vieninieki</div>
-                           <div className="mt-2 text-sm font-medium">Bots / Plūme</div>
-                           <div className="text-xs text-slate-500">Divnieku ekipāža</div>
-                         </div>
-
-                         <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-                           <div className="font-bold text-[#9E3039] mb-1">Biatlons</div>
-                           <div className="text-sm font-medium">Andrejs Rastorgujevs</div>
-                           <div className="text-xs text-slate-500">Līderis</div>
-                           <div className="mt-2 text-sm font-medium">Baiba Bendika</div>
-                           <div className="text-xs text-slate-500">Līdere</div>
-                         </div>
-
-                         <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-                           <div className="font-bold text-[#9E3039] mb-1">Citi Sporta Veidi</div>
-                           <div className="text-sm font-medium">Dženifera Ģērmane</div>
-                           <div className="text-xs text-slate-500">Kalnu slēpošana (Slaloms)</div>
-                           <div className="mt-2 text-sm font-medium">Deniss Vasiļjevs</div>
-                           <div className="text-xs text-slate-500">Daiļslidošana</div>
-                         </div>
-                       </div>
+                     <div className="space-y-3">
+                        {results.map((event) => (
+                           <div key={event.id} onClick={() => setSelectedEvent(event)} className={`bg-white p-4 rounded-xl border shadow-sm flex justify-between items-center cursor-pointer ${
+                               event.isMedal ? 'border-slate-300 bg-slate-50' : 'border-slate-200'
+                           }`}>
+                              <div>
+                                 <div className="text-xs font-bold text-slate-400 uppercase">{event.sport} • {formatDateLatvian(event.date)}</div>
+                                 <h3 className="font-bold text-slate-900 flex items-center">
+                                     {event.event}
+                                     {event.isMedal && <Medal className="w-4 h-4 ml-2 text-slate-500" />}
+                                 </h3>
+                                 <div className="text-sm text-slate-600 mt-1">{event.athletes}</div>
+                              </div>
+                              <div className="text-right">
+                                 <div className={`text-xl font-bold ${event.isMedal ? 'text-slate-500' : 'text-[#9E3039]'}`}>{event.result}</div>
+                              </div>
+                           </div>
+                        ))}
                      </div>
                   </div>
                 )}
-                
-                {activeTab === 'info' && (
-                  <div className="animate-fade-in space-y-4">
-                     <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                        <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center">
-                         <Info className="w-5 h-5 mr-2 text-[#9E3039]" />
-                         Noderīga Informācija
-                       </h2>
-                       
-                       <div className="space-y-4">
-                          <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-                            <h3 className="font-bold text-slate-900 mb-2 flex items-center">
-                               <Tv className="w-4 h-4 mr-2" />
-                               Kur skatīties?
-                            </h3>
-                            <p className="text-sm text-slate-600 mb-2">
-                               Visas Latvijas sportistu startus tiešraidē translē <strong>LTV7</strong> un <strong>LSM.lv</strong>. 
-                               Papildus translācijas pieejamas Eurosport kanālos.
-                            </p>
-                          </div>
-                          
-                          <div className="p-4 bg-slate-50 rounded-lg border border-slate-100">
-                             <h3 className="font-bold text-slate-900 mb-2 flex items-center">
-                               <ExternalLink className="w-4 h-4 mr-2" />
-                               Saites
-                            </h3>
-                             <ul className="space-y-2 text-sm">
-                                <li>
-                                   <a href="https://www.lsm.lv/sports/" target="_blank" className="text-[#9E3039] font-medium hover:underline flex items-center">
-                                      LSM Sports (Ziņas & Video)
-                                   </a>
-                                </li>
-                                <li>
-                                   <a href="https://olimpiade.lv/" target="_blank" className="text-[#9E3039] font-medium hover:underline flex items-center">
-                                      Latvijas Olimpiskā Komiteja
-                                   </a>
-                                </li>
-                                <li>
-                                   <a href="https://milanocortina2026.olympics.com/" target="_blank" className="text-[#9E3039] font-medium hover:underline flex items-center">
-                                      Oficiālā Milano Cortina 2026 lapa
-                                   </a>
-                                </li>
-                             </ul>
-                          </div>
-                       </div>
-                     </div>
+
+                 {/* --- INFO / SASTĀVS --- */}
+                {(activeTab === 'info' || activeTab === 'roster') && (
+                  <div className="animate-fade-in text-center py-10 text-slate-400">
+                      <Info className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                      <p>Informācija pieejama citās sadaļās.</p>
+                      <button onClick={() => setActiveTab('schedule')} className="text-[#9E3039] font-bold mt-2">Atgriezties uz Kalendāru</button>
                   </div>
                 )}
 
@@ -898,3 +689,4 @@
     </script>
 </body>
 </html>
+
