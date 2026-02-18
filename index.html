@@ -1,692 +1,1253 @@
 <!DOCTYPE html>
-<html lang="lv">
+<html lang="lv" class="antialiased">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Milano Cortina 2026 - Latvijas Izlase</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ēģiptes Cenu Ceļvedis</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Import Map -->
-    <script type="importmap">
-    {
-        "imports": {
-            "react": "https://esm.sh/react@18.2.0",
-            "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-            "lucide-react": "https://esm.sh/lucide-react@0.330.0",
-            "canvas-confetti": "https://esm.sh/canvas-confetti@1.6.0"
+    <!-- Firebase SDKs (Modular) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, setDoc, getDoc, onSnapshot, doc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        window.firebaseModules = { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, getFirestore, collection, addDoc, setDoc, getDoc, onSnapshot, doc, deleteDoc, serverTimestamp };
+    </script>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Cairo', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            gold: '#d4af37',
+                            dark: '#1f2937',
+                            light: '#f9fafb',
+                            accent: '#0077b6',
+                            success: '#10b981',
+                            warning: '#f59e0b',
+                            danger: '#ef4444'
+                        }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.4s ease-out',
+                        'slide-up': 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                        'pulse-slow': 'pulse 3s infinite',
+                        'blob': 'blob 7s infinite',
+                        'spin-slow': 'spin 3s linear infinite',
+                    },
+                    keyframes: {
+                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+                        slideUp: { '0%': { transform: 'translateY(20px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } },
+                        blob: {
+                            "0%": { transform: "translate(0px, 0px) scale(1)" },
+                            "33%": { transform: "translate(30px, -50px) scale(1.1)" },
+                            "66%": { transform: "translate(-20px, 20px) scale(0.9)" },
+                            "100%": { transform: "translate(0px, 0px) scale(1)" }
+                        }
+                    }
+                }
+            }
         }
-    }
     </script>
 
-    <!-- Babel -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
     <style>
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-        @keyframes fade-in {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        /* Custom Utilities */
+        body { -webkit-tap-highlight-color: transparent; }
+        body::-webkit-scrollbar { display: none; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .hidden-input { opacity: 0; position: absolute; pointer-events: none; }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
+        
+        /* Glassmorphism */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
         }
-        .animate-fade-in { animation: fade-in 0.3s ease-out forwards; }
+        .dark .glass-panel {
+            background: rgba(17, 24, 39, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-top: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        .dark .glass-nav {
+            background: rgba(17, 24, 39, 0.85);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Navigation */
+        .nav-item { transition: all 0.3s ease; opacity: 0.6; }
+        .nav-item.active { opacity: 1; transform: translateY(-2px); color: #d4af37; }
+        .nav-item.active i { transform: scale(1.1); }
     </style>
 </head>
-<body class="bg-slate-100">
-    <div id="root"></div>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 h-screen flex flex-col overflow-hidden select-none transition-colors duration-300">
 
-    <script type="text/babel" data-type="module">
-        import React, { useState, useEffect, useMemo } from 'react';
-        import { createRoot } from 'react-dom/client';
-        import { 
-          Trophy, Calendar, Clock, MapPin, Users, ChevronRight, X, 
-          Info, Tv, ExternalLink, Shield, Target, Wind, Snowflake, 
-          Flame, Timer, Star, Flag, Medal, CheckCircle
-        } from 'lucide-react';
-        import confetti from 'canvas-confetti';
+    <!-- Background Elements -->
+    <div class="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div class="absolute top-0 left-[-10%] w-72 h-72 bg-purple-300 dark:bg-purple-900 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-30 animate-blob"></div>
+        <div class="absolute top-0 right-[-10%] w-72 h-72 bg-yellow-200 dark:bg-yellow-900 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+        <div class="absolute -bottom-8 left-20 w-72 h-72 bg-pink-300 dark:bg-pink-900 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
+    </div>
 
-        // --- DATI ---
-        const LATVIJAS_GRAFIKS = [
-          // --- 9. FEBRUĀRIS (PAGĀTNE) ---
-          {
-            id: 'luge-train-9',
-            sport: 'Kamaniņas',
-            event: 'Sievietes - Oficiālie treniņi',
-            date: '2026-02-09',
-            time: '10:00',
-            venue: 'Cortina Sliding Centre',
-            status: 'Pabeigts',
-            channel: '-',
-            athletes: 'Elīna Ieva Vītola, Kendija Aparjode',
-            details: 'Treniņbraucieni noslēgušies.',
-            result: 'Treniņš',
-            isHighlight: false
-          },
-
-          // --- 10. FEBRUĀRIS (ŠODIEN - REZULTĀTI) ---
-          {
-            id: 'xc-sprint-final',
-            sport: 'Distanču Slēpošana',
-            event: 'Sprints (Brīvais stils) - Kvalifikācija/Fināli',
-            date: '2026-02-10',
-            time: '12:45',
-            venue: 'Val di Fiemme',
-            status: 'Pabeigts',
-            channel: 'LTV7',
-            athletes: 'Patrīcija Eiduka',
-            details: 'Patrīcija startēja kvalifikācijā, bet neiekļuva izšķirošajās cīņās par medaļām.',
-            result: '23. vieta',
-            isHighlight: false
-          },
-          {
-            id: 'bia-m-20k',
-            sport: 'Biatlons',
-            event: 'Vīrieši 20km Individuālā distance',
-            date: '2026-02-10',
-            time: '15:30',
-            venue: 'Antholz',
-            status: 'Pabeigts',
-            channel: 'LTV7',
-            athletes: 'Andrejs Rastorgujevs, Renārs Birkentāls',
-            details: 'Diemžēl neveiksmes šaušanā liedza Andrejam cīnīties par augstām vietām. Vairākas kļūdas (soda minūtes) nobīdīja viņu uz leju.',
-            result: '41. vieta (A. Rastorgujevs)', // LABOTS
-            isHighlight: true
-          },
-          {
-            id: 'fig-m-short',
-            sport: 'Daiļslidošana',
-            event: 'Vīrieši - Īsā programma',
-            date: '2026-02-10',
-            time: '17:00',
-            venue: 'Milan Forum',
-            status: 'Pabeigts',
-            channel: 'LTV7',
-            athletes: 'Deniss Vasiļjevs',
-            details: 'Deniss ir kvalificējies izvēles programmai, kas notiks 12. februārī.',
-            result: 'Kvalificējies',
-            isHighlight: false
-          },
-          {
-            id: 'luge-w-final',
-            sport: 'Kamaniņas',
-            event: 'Sievietes - 4. brauciens (Fināls)',
-            date: '2026-02-10',
-            time: '18:00', 
-            venue: 'Cortina Sliding Centre',
-            status: 'Pabeigts',
-            channel: 'LTV7',
-            athletes: 'Elīna Ieva Vītola',
-            details: 'LATVIJAI PIRMA MEDAĻA! Elīna Ieva Vītola izcīna sudrabu, piekāpjoties tikai vācietei Jūlijai Taubicai.',
-            result: 'SUDRABS 🥈',
-            isHighlight: true,
-            isMedal: true,
-            medalType: 'silver'
-          },
-
-          // --- 11. FEBRUĀRIS (RĪT) ---
-          {
-            id: 'luge-doubles',
-            sport: 'Kamaniņas',
-            event: 'Divnieki - 1. un 2. brauciens (Medaļas)',
-            date: '2026-02-11',
-            time: '14:00',
-            venue: 'Cortina',
-            status: 'Gaidāms',
-            channel: 'LTV7',
-            athletes: 'M. Bots / R. Plūme',
-            details: 'Bots un Plūme ir vieni no galvenajiem favorītiem uz zeltu.',
-            isHighlight: true
-          },
-          {
-            id: 'bia-w-15k',
-            sport: 'Biatlons',
-            event: 'Sievietes 15km Individuālā distance',
-            date: '2026-02-11',
-            time: '15:30',
-            venue: 'Antholz',
-            status: 'Gaidāms',
-            channel: 'LTV7',
-            athletes: 'Baiba Bendika',
-            details: 'Starts 15:30. Baibai jāšauj precīzi, lai cīnītos par TOP 20.',
-            isHighlight: false
-          },
-
-          // --- 12. FEBRUĀRIS (CETURTDIENA) ---
-          {
-            id: 'luge-relay',
-            sport: 'Kamaniņas',
-            event: 'Komandu Stafete (Medaļas)',
-            date: '2026-02-12',
-            time: '15:00',
-            venue: 'Cortina',
-            status: 'Gaidāms',
-            channel: 'LTV7',
-            athletes: 'Latvijas Izlase',
-            details: 'Komandā būs sudraba medaļniece Vītola, labākais vīrietis un divnieks.',
-            isHighlight: true
-          },
-          {
-            id: 'fig-m-free',
-            sport: 'Daiļslidošana',
-            event: 'Vīrieši - Izvēles programma (Medaļas)',
-            date: '2026-02-12',
-            time: '17:00',
-            venue: 'Milan Forum',
-            status: 'Gaidāms',
-            channel: 'LTV7',
-            athletes: 'Deniss Vasiļjevs',
-            details: 'Fināls daiļslidošanā.',
-            isHighlight: false
-          },
-          {
-            id: 'hock-usa',
-            sport: 'Hokejs',
-            event: 'Latvija vs ASV',
-            date: '2026-02-12',
-            time: '22:10',
-            venue: 'Milāna',
-            status: 'Gaidāms',
-            channel: 'LTV7',
-            athletes: 'Latvijas Izlase',
-            details: 'Grupas C pirmā spēle.',
-            isHighlight: true
-          },
-
-           // --- 14. FEBRUĀRIS (SESTDIENA) ---
-          {
-            id: 'hock-ger',
-            sport: 'Hokejs',
-            event: 'Latvija vs Vācija',
-            date: '2026-02-14',
-            time: '13:10',
-            venue: 'Milāna',
-            status: 'Gaidāms',
-            channel: 'LTV7',
-            athletes: 'Latvijas Izlase',
-            details: 'Spēle pret Vāciju.',
-            isHighlight: true
-          },
-          
-           // --- 15. FEBRUĀRIS (SVĒTDIENA) ---
-          {
-            id: 'skel-mixed',
-            sport: 'Skeletons',
-            event: 'Jauktā Komandu Stafete',
-            date: '2026-02-15',
-            time: '18:00',
-            venue: 'Cortina',
-            status: 'Gaidāms',
-            channel: 'LTV7',
-            athletes: 'Latvijas Komanda',
-            details: 'Jauna disciplīna.',
-            isHighlight: true
-          },
-          {
-            id: 'hock-den',
-            sport: 'Hokejs',
-            event: 'Latvija vs Dānija',
-            date: '2026-02-15',
-            time: '20:10',
-            venue: 'Milāna',
-            status: 'Gaidāms',
-            channel: 'LTV7',
-            athletes: 'Latvijas Izlase',
-            details: 'Grupas pēdējā spēle.',
-            isHighlight: true
-          },
-
-          // --- 16. FEBRUĀRIS (PIRMDIENA) ---
-          {
-            id: 'bob-2man-12',
-            sport: 'Bobslejs',
-            event: 'Divnieki - 1. un 2. brauciens',
-            date: '2026-02-16',
-            time: '10:00',
-            venue: 'Cortina',
-            status: 'Gaidāms',
-            channel: 'LTV7',
-            athletes: 'Cipulis / Kalenda',
-            details: 'Startē bobsleja divnieki.',
-            isHighlight: false
-          },
-
-          // --- 17. FEBRUĀRIS (OTRDIENA) ---
-          {
-            id: 'bob-2man-34',
-            sport: 'Bobslejs',
-            event: 'Divnieki - 3. un 4. brauciens (Medaļas)',
-            date: '2026-02-17',
-            time: '10:00',
-            venue: 'Cortina',
-            status: 'Gaidāms',
-            channel: 'LTV7',
-            athletes: 'Cipulis / Kalenda',
-            details: 'Medaļu sadale bobslejā.',
-            isHighlight: true
-          },
-          
-           // --- 18. FEBRUĀRIS (TREŠDIENA) ---
-          {
-            id: 'bia-relay-m',
-            sport: 'Biatlons',
-            event: 'Vīrieši 4x7.5km Stafete',
-            date: '2026-02-18',
-            time: '15:30',
-            venue: 'Antholz',
-            status: 'Gaidāms',
-            channel: 'LTV7',
-            athletes: 'Latvijas Izlase',
-            details: 'Vīriešu stafete.',
-            isHighlight: false
-          },
-
-          // --- 21. FEBRUĀRIS (SESTDIENA) ---
-          {
-            id: 'bob-4man-12',
-            sport: 'Bobslejs',
-            event: 'Četrinieki - 1. un 2. brauciens',
-            date: '2026-02-21',
-            time: '10:00',
-            venue: 'Cortina',
-            status: 'Gaidāms',
-            channel: 'LTV7',
-            athletes: 'E. Cipuļa ekipāža',
-            details: 'Starts bobsleja četriniekiem.',
-            isHighlight: false
-          },
-          {
-            id: 'bia-mass',
-            sport: 'Biatlons',
-            event: 'Masu Starts (30 labākie)',
-            date: '2026-02-21',
-            time: '13:00',
-            venue: 'Antholz',
-            status: 'Gaidāms',
-            channel: 'LTV7',
-            athletes: 'Rastorgujevs (ja kvalif.)',
-            details: 'Pēdējais starts biatlonā.',
-            isHighlight: true
-          },
-
-          // --- 22. FEBRUĀRIS (SVĒTDIENA) ---
-          {
-            id: 'bob-4man-34',
-            sport: 'Bobslejs',
-            event: 'Četrinieki - Fināli (Medaļas)',
-            date: '2026-02-22',
-            time: '10:00',
-            venue: 'Cortina',
-            status: 'Gaidāms',
-            channel: 'LTV7',
-            athletes: 'E. Cipuļa ekipāža',
-            details: 'Olimpiādes noslēguma sacensības.',
-            isHighlight: true
-          }
-        ];
-
-        // --- PALĪG KOMPONENTES ---
-
-        const SportaIkona = ({ sport, className }) => {
-          switch (sport) {
-            case 'Hokejs': return <Snowflake className={className} />;
-            case 'Kamaniņas': return <Flame className={className} />;
-            case 'Bobslejs': return <Timer className={className} />;
-            case 'Biatlons': return <Target className={className} />;
-            case 'Skeletons': return <Wind className={className} />;
-            case 'Daiļslidošana': return <Users className={className} />;
-            default: return <Trophy className={className} />;
-          }
-        };
-
-        const SacensibuCentrs = ({ event, onClose }) => {
-          if (!event) return null;
-
-          return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-              <div className="bg-white w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl flex flex-col relative overflow-hidden">
-                
-                {/* Medaļas fona efekts */}
-                {event.isMedal && (
-                   <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-slate-300 via-slate-400 to-slate-300 animate-pulse z-20"></div>
-                )}
-
-                <div className="sticky top-0 z-10 bg-[#9E3039] text-white p-5 flex justify-between items-start">
-                  <div>
-                    <div className="flex items-center space-x-2 opacity-90 text-xs font-bold uppercase tracking-wider mb-1">
-                      <span>{event.sport}</span>
-                    </div>
-                    <h2 className="text-xl font-bold leading-tight pr-4">{event.event}</h2>
-                  </div>
-                  <button onClick={onClose} className="p-2 bg-white/20 hover:bg-white/30 rounded-full">
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-                <div className="p-6">
-                  
-                  {/* REZULTĀTA KARTIŅA */}
-                  {event.result && (
-                    <div className={`p-4 rounded-xl border mb-6 text-center ${
-                        event.isMedal 
-                        ? 'bg-slate-50 border-slate-300 shadow-lg scale-105 transform transition-transform' 
-                        : 'bg-slate-50 border-slate-200'
-                    }`}>
-                        <div className="text-xs font-bold uppercase tracking-wider mb-1 opacity-60">
-                            {event.status === 'Pabeigts' ? 'Oficiālais Rezultāts' : 'Statuss'}
-                        </div>
-                        <div className={`text-3xl font-black ${event.isMedal ? 'text-slate-600' : 'text-slate-800'}`}>
-                            {event.result}
-                        </div>
-                        {event.isMedal && (
-                            <div className="text-xs font-bold text-slate-500 mt-1 animate-bounce">
-                                APSVEICAM ELĪNU! 🇱🇻
-                            </div>
-                        )}
-                    </div>
-                  )}
-
-                  <div className="space-y-4">
-                     <div className="flex items-center text-sm font-medium text-slate-700">
-                        <Clock className="w-4 h-4 mr-3 text-slate-400" />
-                        {event.time} (LV laiks)
-                     </div>
-                     <div className="flex items-center text-sm font-medium text-slate-700">
-                        <MapPin className="w-4 h-4 mr-3 text-slate-400" />
-                        {event.venue}
-                     </div>
-                     <div className="pt-2 border-t">
-                        <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Sportisti</div>
-                        <div className="font-medium">{event.athletes}</div>
-                     </div>
-                     <div>
-                        <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Komentārs</div>
-                        <div className="text-sm text-slate-600 leading-relaxed">{event.details}</div>
-                     </div>
-                  </div>
-                </div>
-                <div className="p-4 border-t bg-slate-50 flex justify-center rounded-b-2xl">
-                  <button onClick={onClose} className="text-slate-500 font-medium text-sm">Aizvērt</button>
-                </div>
-              </div>
+    <!-- === HEADER === -->
+    <header class="glass-nav shadow-sm px-5 py-3 flex items-center justify-between z-30 shrink-0 relative transition-colors duration-300">
+        <div class="flex items-center gap-3">
+            <div class="bg-brand-dark dark:bg-brand-gold text-white w-9 h-9 rounded-xl flex items-center justify-center font-bold text-lg shadow-md bg-gradient-to-br from-gray-800 to-black dark:from-yellow-600 dark:to-yellow-800 transition-colors">Ē</div>
+            <div>
+                <h1 class="text-lg font-bold leading-none text-gray-900 dark:text-white">Ēģiptes Palīgs</h1>
+                <span class="text-[10px] text-gray-400 dark:text-gray-300 font-medium tracking-wide uppercase">AI Cenu Analīze</span>
             </div>
-          );
-        };
+        </div>
+        <div class="flex items-center gap-3">
+             <div id="live-rate-badge" class="hidden sm:block text-xs font-bold bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-gray-500 dark:text-gray-300 border border-gray-200 dark:border-gray-700 animate-fade-in">1€ ≈ 55 EGP</div>
+             <button onclick="App.ui.toggleTheme()" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                <i class="fa-solid fa-moon dark:hidden"></i>
+                <i class="fa-solid fa-sun hidden dark:block text-yellow-400"></i>
+             </button>
+             <button onclick="App.ui.openModal('auth')" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition relative">
+                <i class="fa-solid fa-user"></i>
+                <div id="authStatusDot" class="absolute top-0 right-0 w-2.5 h-2.5 bg-gray-300 border-2 border-white dark:border-gray-800 rounded-full"></div>
+             </button>
+             <button onclick="App.ui.openModal('settings')" class="w-9 h-9 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center text-gray-400 hover:text-brand-gold transition"><i class="fa-solid fa-gear"></i></button>
+        </div>
+    </header>
 
-        // --- GALVENĀ LIETOTNE ---
+    <!-- === MAIN CONTENT === -->
+    <main id="mainContainer" class="flex-1 relative w-full max-w-md mx-auto overflow-hidden z-10">
+        
+        <!-- VIEW 1: SCAN -->
+        <div id="view-scan" class="view-section flex flex-col h-full p-6 animate-fade-in overflow-y-auto">
+            <div class="text-center mt-4 mb-8">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Cenu Pārbaude</h2>
+                <p class="text-sm text-gray-400 dark:text-gray-300">Izmantojiet kameru produktu cenu analīzei</p>
+            </div>
 
-        const LatviaOlympicsApp = () => {
-          const [activeTab, setActiveTab] = useState('schedule');
-          const [events, setEvents] = useState(LATVIJAS_GRAFIKS);
-          const [selectedEvent, setSelectedEvent] = useState(null);
-          const [medalNotification, setMedalNotification] = useState(true);
-          
-          // LAIKS: Otrdiena, 10. Februāris, Vēls Vakars
-          const [currentTime, setCurrentTime] = useState(new Date("2026-02-10T23:15:00"));
+            <div class="flex-1 flex flex-col gap-4 justify-center">
+                <label class="relative w-full aspect-[4/3] glass-panel rounded-3xl shadow-lg flex flex-col items-center justify-center gap-4 cursor-pointer hover:shadow-xl active:scale-[0.98] transition-all group overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-tr from-gray-50/50 to-transparent opacity-0 group-hover:opacity-100 transition duration-500"></div>
+                    <div class="w-20 h-20 bg-brand-dark dark:bg-brand-gold text-white rounded-full flex items-center justify-center text-3xl shadow-xl group-hover:scale-110 transition duration-300 z-10 bg-gradient-to-br from-gray-700 to-black dark:from-yellow-500 dark:to-yellow-700">
+                        <i class="fa-solid fa-camera"></i>
+                    </div>
+                    <span class="font-bold text-gray-600 dark:text-gray-200 z-10">Atvērt Kameru</span>
+                    <input type="file" onchange="App.scan.handleFile(this)" accept="image/*" capture="environment" class="hidden-input">
+                </label>
 
-          // Pārbaudām, vai ir medaļa
-          const hasMedal = useMemo(() => events.some(e => e.isMedal), [events]);
+                <label class="w-full py-5 glass-panel border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl flex items-center justify-center gap-3 cursor-pointer hover:border-brand-gold dark:hover:border-brand-gold hover:bg-yellow-50/20 active:scale-[0.98] transition-all group">
+                    <i class="fa-solid fa-images text-gray-400 group-hover:text-brand-gold transition"></i>
+                    <span class="font-semibold text-gray-500 dark:text-gray-300 group-hover:text-brand-dark dark:group-hover:text-white transition">Izvēlēties no Galerijas</span>
+                    <input type="file" onchange="App.scan.handleFile(this)" accept="image/*" class="hidden-input">
+                </label>
+            </div>
+        </div>
 
-          // Confetti efekts ielādējoties, ja ir medaļa
-          useEffect(() => {
-            if (hasMedal) {
-                confetti({
-                    particleCount: 150,
-                    spread: 80,
-                    origin: { y: 0.6 },
-                    colors: ['#9E3039', '#ffffff', '#C0C0C0'] // Latvijas karogs + Sudrabs
-                });
-            }
-          }, [hasMedal]);
+        <!-- VIEW 2: CONVERTER -->
+        <div id="view-converter" class="view-section hidden flex flex-col h-full p-6 animate-fade-in overflow-y-auto">
+            <h2 class="text-2xl font-bold mb-6 text-gray-800 dark:text-white">Kalkulators</h2>
+            <div class="glass-panel rounded-3xl p-6 shadow-md space-y-6">
+                <div class="space-y-4">
+                    <div class="relative">
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider absolute -top-2 left-2 bg-white dark:bg-gray-800 px-1 rounded">Eiro (€)</label>
+                        <input type="number" id="inp-eur" value="1" oninput="App.tools.convert('eur')" class="w-full text-3xl font-bold text-gray-800 dark:text-white border dark:border-gray-600 rounded-xl px-4 py-3 focus:border-brand-gold outline-none transition bg-gray-50/50 dark:bg-gray-800/50">
+                    </div>
+                    <div class="flex justify-center -my-2 relative z-10"><div class="bg-gray-100 dark:bg-gray-700 text-gray-400 rounded-full p-1 border-4 border-white dark:border-gray-800"><i class="fa-solid fa-arrow-right-arrow-left rotate-90 text-sm"></i></div></div>
+                    <div class="relative">
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-wider absolute -top-2 left-2 bg-white dark:bg-gray-800 px-1 rounded">Ēģiptes Mārciņa (EGP)</label>
+                        <input type="number" id="inp-egp" value="55" oninput="App.tools.convert('egp')" class="w-full text-3xl font-bold text-gray-800 dark:text-white border dark:border-gray-600 rounded-xl px-4 py-3 focus:border-brand-gold outline-none transition bg-gray-50/50 dark:bg-gray-800/50">
+                    </div>
+                </div>
+                <div class="pt-4 border-t border-dashed border-gray-200 dark:border-gray-600">
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="text-xs font-bold text-brand-gold uppercase"><i class="fa-solid fa-tag mr-1"></i>Atlaide (%)</label>
+                    </div>
+                    <input type="number" id="inp-disc" placeholder="0" oninput="App.tools.convert('disc')" class="w-full text-xl font-semibold text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-600 focus:border-brand-gold outline-none py-1 bg-transparent">
+                </div>
+                <div id="res-discount" class="hidden bg-green-50 dark:bg-green-900/30 rounded-2xl p-4 flex flex-col items-center animate-slide-up border border-green-100 dark:border-green-800/50">
+                    <span class="text-[10px] text-green-600 dark:text-green-400 font-bold uppercase tracking-widest">Gala Cena</span>
+                    <div class="text-2xl font-bold text-green-700 dark:text-green-300 mt-1">
+                        <span id="out-final-eur">--</span> <span class="text-sm opacity-60 font-normal">/</span> <span id="out-final-egp">--</span>
+                    </div>
+                    <span class="text-xs text-green-600 dark:text-green-400 mt-1 bg-green-100 dark:bg-green-900/50 px-2 py-0.5 rounded-full" id="out-saved">--</span>
+                </div>
+            </div>
+        </div>
 
-          useEffect(() => {
-            const timer = setInterval(() => {
-              setCurrentTime(prev => new Date(prev.getTime() + 60000));
-            }, 60000);
-            return () => clearInterval(timer);
-          }, []);
-
-          const processedSchedule = useMemo(() => {
-            const sorted = [...events].sort((a, b) => new Date(a.date) - new Date(b.date));
-            const grouped = sorted.reduce((acc, item) => {
-              if (!acc[item.date]) acc[item.date] = [];
-              acc[item.date].push(item);
-              return acc;
-            }, {});
-            return grouped;
-          }, [events]);
-
-          const results = useMemo(() => {
-             // Rādīt rezultātus, kas ir pabeigti VAI medaļu gadījumā
-             return events.filter(e => e.result && (e.status === 'Pabeigts' || e.isMedal)).reverse();
-          }, [events]);
-
-          const formatDateLatvian = (dateStr) => {
-            const date = new Date(dateStr);
-            const today = new Date("2026-02-10");
-            const tomorrow = new Date("2026-02-11");
+        <!-- VIEW 3: GUIDE HUB -->
+        <div id="view-guide" class="view-section hidden flex flex-col h-full animate-fade-in relative">
             
-            if (date.toDateString() === today.toDateString()) return "Šodien, 10. februāris";
-            if (date.toDateString() === tomorrow.toDateString()) return "Rīt, 11. februāris";
-            return new Intl.DateTimeFormat('lv-LV', { weekday: 'long', day: 'numeric', month: 'long' }).format(date);
-          };
-
-          const isPast = (dateStr) => new Date(dateStr) < new Date("2026-02-10");
-
-          return (
-            <div className="min-h-screen bg-slate-100 font-sans text-slate-900 pb-20">
-              
-              {/* MEDAĻAS BANERIS */}
-              {hasMedal && medalNotification && (
-                  <div className="bg-slate-200 text-slate-800 px-4 py-3 shadow-md flex justify-between items-center animate-fade-in relative overflow-hidden border-b-2 border-slate-300">
-                      <div className="absolute inset-0 bg-white/40 transform -skew-x-12 translate-x-full animate-[shimmer_2s_infinite]"></div>
-                      <div className="flex items-center font-bold z-10">
-                          <div className="bg-slate-300 p-1 rounded-full mr-2">
-                             <Medal className="w-5 h-5 text-slate-600" />
-                          </div>
-                          <span>LATVIJAI SUDRABS! ELĪNA IEVA VĪTOLA! 🥈</span>
-                      </div>
-                      <button onClick={() => setMedalNotification(false)} className="p-1 hover:bg-black/10 rounded-full z-10">
-                          <X className="w-4 h-4" />
-                      </button>
-                  </div>
-              )}
-
-              {/* Galvene */}
-              <header className="bg-gradient-to-r from-[#9E3039] to-[#7a242b] text-white shadow-lg sticky top-0 z-40">
-                <div className="max-w-3xl mx-auto px-4 py-4">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center space-x-3">
-                      <div className="bg-white text-[#9E3039] font-bold h-10 w-10 flex items-center justify-center rounded-full shadow-md text-xl">
-                        LV
-                      </div>
-                      <div>
-                        <h1 className="text-lg font-bold leading-tight">Milano Cortina 2026</h1>
-                        <p className="text-xs text-white/80 font-medium">Latvijas Izlases Kalendārs</p>
-                      </div>
+            <!-- MAIN MENU -->
+            <div id="guide-menu" class="p-6 h-full overflow-y-auto">
+                <h2 class="text-2xl font-bold mb-6 text-gray-800 dark:text-white">Ēģiptes Gids</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <!-- Hotels -->
+                    <div onclick="App.ui.openGuideSub('hotels')" class="col-span-2 glass-panel p-5 rounded-2xl shadow-sm hover:shadow-md transition active:scale-[0.98] cursor-pointer flex items-center justify-between group">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xl"><i class="fa-solid fa-hotel"></i></div>
+                            <div>
+                                <h3 class="font-bold text-gray-800 dark:text-white group-hover:text-brand-gold transition">Viesnīcas</h3>
+                                <p class="text-xs text-gray-400">Ēdināšana, kartes, info</p>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-gray-300"></i>
                     </div>
-                    <div className="text-right hidden sm:block">
-                       <div className="text-xs font-medium uppercase opacity-80">Rīgas Laiks</div>
-                       <div className="font-mono font-bold text-lg">
-                         {currentTime.toLocaleTimeString('lv-LV', { hour: '2-digit', minute: '2-digit' })}
-                       </div>
-                    </div>
-                  </div>
 
-                  {/* Navigācija */}
-                  <div className="flex mt-4 space-x-1 overflow-x-auto scrollbar-hide">
-                    {['schedule', 'results', 'roster', 'info'].map(tab => (
-                        <button
-                          key={tab}
-                          onClick={() => setActiveTab(tab)}
-                          className={`px-4 py-2 rounded-t-lg text-sm font-bold transition-all whitespace-nowrap relative ${
-                            activeTab === tab 
-                              ? 'bg-slate-100 text-[#9E3039]' 
-                              : 'text-white/70 hover:bg-white/10'
-                          }`}
-                        >
-                          {tab === 'schedule' ? 'Kalendārs' : 
-                           tab === 'results' ? 'Panākumi' : 
-                           tab === 'roster' ? 'Sastāvs' : 'Noderīgi'}
-                           
-                           {tab === 'results' && hasMedal && (
-                               <span className="absolute top-1 right-1 w-2 h-2 bg-slate-300 rounded-full animate-ping"></span>
-                           )}
-                        </button>
-                    ))}
-                  </div>
+                    <!-- Taxi -->
+                    <div onclick="App.ui.openGuideSub('taxi')" class="glass-panel p-4 rounded-2xl shadow-sm hover:shadow-md transition active:scale-[0.98] cursor-pointer flex flex-col items-center text-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 flex items-center justify-center"><i class="fa-solid fa-taxi"></i></div>
+                        <h3 class="font-bold text-sm text-gray-800 dark:text-white leading-tight">Takšu<br>Cenas</h3>
+                    </div>
+
+                    <!-- Tipping -->
+                    <div onclick="App.ui.openGuideSub('tips')" class="glass-panel p-4 rounded-2xl shadow-sm hover:shadow-md transition active:scale-[0.98] cursor-pointer flex flex-col items-center text-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 flex items-center justify-center"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+                        <h3 class="font-bold text-sm text-gray-800 dark:text-white leading-tight">Dzeram-<br>nauda</h3>
+                    </div>
+
+                    <!-- Scams -->
+                    <div onclick="App.ui.openGuideSub('scams')" class="glass-panel p-4 rounded-2xl shadow-sm hover:shadow-md transition active:scale-[0.98] cursor-pointer flex flex-col items-center text-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                        <h3 class="font-bold text-sm text-gray-800 dark:text-white leading-tight">Izvairies<br>Krāpniekiem</h3>
+                    </div>
                 </div>
-              </header>
-
-              <main className="max-w-3xl mx-auto px-4 py-6">
-                
-                {/* --- KALENDĀRS --- */}
-                {activeTab === 'schedule' && (
-                  <div className="animate-fade-in space-y-8">
-                    {Object.keys(processedSchedule).map(date => {
-                       const isToday = date === '2026-02-10';
-                       const isHistory = isPast(date);
-
-                       return (
-                        <div key={date} className={isHistory ? 'opacity-60 grayscale-[0.5]' : ''}>
-                          <div className={`sticky top-[130px] sm:top-[85px] z-30 py-2 backdrop-blur border-b mb-4 flex items-center ${
-                              isToday ? 'bg-blue-50/95 border-blue-200 text-blue-800' : 'bg-slate-100/95 border-slate-200 text-slate-600'
-                          }`}>
-                            <div className={`h-2.5 w-2.5 rounded-full mr-3 ${isToday ? 'bg-blue-600 animate-pulse' : 'bg-slate-400'}`}></div>
-                            <h2 className="text-base font-bold uppercase tracking-wider">
-                              {formatDateLatvian(date)}
-                            </h2>
-                            {isToday && <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-bold">ŠODIEN</span>}
-                          </div>
-
-                          <div className="space-y-3">
-                            {processedSchedule[date].map(event => (
-                              <div 
-                                key={event.id}
-                                onClick={() => setSelectedEvent(event)}
-                                className={`group bg-white rounded-xl p-4 shadow-sm border transition-all cursor-pointer relative overflow-hidden hover:shadow-md ${
-                                  event.isMedal ? 'border-slate-400 ring-1 ring-slate-400 bg-slate-50' : 
-                                  event.isHighlight ? 'border-l-4 border-l-[#9E3039]' : 'border-slate-200'
-                                }`}
-                              >
-                                <div className="flex justify-between items-center">
-                                  <div className="flex items-center space-x-4 overflow-hidden">
-                                    <div className={`h-11 w-11 rounded-full flex items-center justify-center shrink-0 ${
-                                      event.isMedal ? 'bg-slate-200 text-slate-600' :
-                                      event.isHighlight ? 'bg-red-50 text-[#9E3039]' : 'bg-slate-50 text-slate-400'
-                                    }`}>
-                                      {event.isMedal ? <Medal className="w-6 h-6 animate-pulse" /> : <SportaIkona sport={event.sport} className="w-5 h-5" />}
-                                    </div>
-                                    
-                                    <div className="min-w-0 pr-2">
-                                      <div className="flex items-center space-x-2 mb-0.5">
-                                         <span className="text-[10px] font-bold text-slate-500 uppercase bg-slate-100 px-1.5 py-0.5 rounded">
-                                           {event.sport}
-                                         </span>
-                                         {event.isMedal && (
-                                            <span className="flex items-center text-[10px] font-bold text-slate-700 bg-slate-200 px-1.5 py-0.5 rounded">
-                                              SUDRABS!
-                                            </span>
-                                         )}
-                                      </div>
-                                      <h3 className="text-sm sm:text-base font-bold text-slate-900 leading-tight group-hover:text-[#9E3039] transition-colors">
-                                        {event.event}
-                                      </h3>
-                                      <div className="text-xs text-slate-500 mt-1 truncate flex items-center">
-                                        <Users className="w-3 h-3 mr-1" />
-                                        {event.athletes}
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  <div className="flex items-center space-x-3 shrink-0 pl-2 text-right">
-                                     <div>
-                                       {event.result ? (
-                                           <div className={`text-sm font-bold ${event.isMedal ? 'text-slate-600 text-base' : 'text-slate-800'}`}>{event.result}</div>
-                                       ) : (
-                                           <div className="text-lg font-bold font-mono text-slate-800">{event.time}</div>
-                                       )}
-                                       <div className="text-[10px] uppercase font-bold text-slate-400">
-                                           {event.status === 'Pabeigts' ? 'Beidzies' : 'TV: ' + event.channel}
-                                       </div>
-                                     </div>
-                                     <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-[#9E3039]" />
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                    )})}
-                  </div>
-                )}
-
-                {/* --- PANĀKUMI (REZULTĀTI) --- */}
-                {activeTab === 'results' && (
-                  <div className="animate-fade-in space-y-4">
-                     <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 text-center">
-                        <Trophy className="w-12 h-12 text-[#9E3039] mx-auto mb-2" />
-                        <h2 className="text-xl font-bold text-slate-800">Latvijas Rezultāti</h2>
-                        <div className="text-3xl font-bold text-slate-900 mt-4 flex justify-center gap-4">
-                            <div className="text-center">
-                                <span className="block text-yellow-500">0</span>
-                                <span className="text-xs text-slate-400 font-normal uppercase">Zelts</span>
-                            </div>
-                            <div className="text-center">
-                                <span className="block text-slate-500">1</span>
-                                <span className="text-xs text-slate-400 font-normal uppercase">Sudrabs</span>
-                            </div>
-                            <div className="text-center">
-                                <span className="block text-amber-700">0</span>
-                                <span className="text-xs text-slate-400 font-normal uppercase">Bronza</span>
-                            </div>
-                        </div>
-                     </div>
-
-                     <div className="space-y-3">
-                        {results.map((event) => (
-                           <div key={event.id} onClick={() => setSelectedEvent(event)} className={`bg-white p-4 rounded-xl border shadow-sm flex justify-between items-center cursor-pointer ${
-                               event.isMedal ? 'border-slate-300 bg-slate-50' : 'border-slate-200'
-                           }`}>
-                              <div>
-                                 <div className="text-xs font-bold text-slate-400 uppercase">{event.sport} • {formatDateLatvian(event.date)}</div>
-                                 <h3 className="font-bold text-slate-900 flex items-center">
-                                     {event.event}
-                                     {event.isMedal && <Medal className="w-4 h-4 ml-2 text-slate-500" />}
-                                 </h3>
-                                 <div className="text-sm text-slate-600 mt-1">{event.athletes}</div>
-                              </div>
-                              <div className="text-right">
-                                 <div className={`text-xl font-bold ${event.isMedal ? 'text-slate-500' : 'text-[#9E3039]'}`}>{event.result}</div>
-                              </div>
-                           </div>
-                        ))}
-                     </div>
-                  </div>
-                )}
-
-                 {/* --- INFO / SASTĀVS --- */}
-                {(activeTab === 'info' || activeTab === 'roster') && (
-                  <div className="animate-fade-in text-center py-10 text-slate-400">
-                      <Info className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                      <p>Informācija pieejama citās sadaļās.</p>
-                      <button onClick={() => setActiveTab('schedule')} className="text-[#9E3039] font-bold mt-2">Atgriezties uz Kalendāru</button>
-                  </div>
-                )}
-
-              </main>
-
-              {/* Detalizētā skata logs */}
-              {selectedEvent && (
-                <SacensibuCentrs event={selectedEvent} onClose={() => setSelectedEvent(null)} />
-              )}
-
             </div>
-          );
+
+            <!-- SUB-VIEW: HOTELS -->
+            <div id="guide-sub-hotels" class="guide-subview hidden absolute inset-0 bg-gray-50 dark:bg-gray-900 z-10 flex flex-col">
+                <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center gap-3">
+                    <button onclick="App.ui.closeGuideSub()" class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></button>
+                    <h3 class="font-bold text-lg dark:text-white">Viesnīcas</h3>
+                </div>
+                <div class="p-4 border-b border-gray-100 dark:border-gray-800">
+                     <select id="hotel-selector" onchange="App.hotels.load(this.value)" class="w-full p-3 bg-white dark:bg-gray-800 rounded-xl font-bold dark:text-white border border-gray-200 dark:border-gray-700 appearance-none outline-none">
+                        <!-- Filled by JS -->
+                    </select>
+                </div>
+                <div class="flex-1 overflow-y-auto p-5 pb-24 space-y-6">
+                    <div>
+                        <h2 id="hotel-name" class="text-2xl font-bold text-gray-800 dark:text-white leading-tight">...</h2>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span id="hotel-stars" class="text-[10px] font-bold bg-brand-gold text-white px-2 py-0.5 rounded">...</span>
+                            <span id="hotel-loc" class="text-xs text-gray-500 dark:text-gray-400">...</span>
+                        </div>
+                    </div>
+                    <div id="hotel-features" class="grid grid-cols-3 gap-3"></div>
+                    <div class="glass-panel rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                        <div class="px-4 py-3 bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                            <h3 class="font-bold text-gray-800 dark:text-white"><i class="fa-solid fa-utensils text-brand-gold mr-2"></i>Ēdināšana</h3>
+                        </div>
+                        <div id="hotel-dining" class="p-2 space-y-2"></div>
+                    </div>
+                    <div class="glass-panel rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
+                        <h3 class="font-bold text-gray-800 dark:text-white mb-3 text-sm uppercase tracking-wide">Restorāni & Bāri</h3>
+                        <ul id="hotel-venues" class="text-sm space-y-3 text-gray-600 dark:text-gray-300"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUB-VIEW: TAXI -->
+            <div id="guide-sub-taxi" class="guide-subview hidden absolute inset-0 bg-gray-50 dark:bg-gray-900 z-10 flex flex-col">
+                <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center gap-3">
+                    <button onclick="App.ui.closeGuideSub()" class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></button>
+                    <h3 class="font-bold text-lg dark:text-white">Taxi Kalkulators</h3>
+                </div>
+                <div class="p-6 flex-1 overflow-y-auto">
+                    <div class="glass-panel rounded-2xl p-6 mb-6">
+                        <label class="text-xs font-bold text-gray-400 uppercase mb-2 block">Attālums (km)</label>
+                        <input type="number" id="taxi-km" oninput="App.guide.calcTaxi()" placeholder="Piem: 5" class="w-full text-3xl font-bold bg-transparent border-b-2 border-brand-gold outline-none py-2 text-gray-800 dark:text-white">
+                        <div class="mt-6 space-y-4">
+                            <div class="flex justify-between items-center p-3 rounded-xl bg-gray-100 dark:bg-gray-800">
+                                <div>
+                                    <div class="text-xs font-bold text-gray-500">Uber/Careem</div>
+                                    <div class="text-[10px] text-gray-400">Godīga cena</div>
+                                </div>
+                                <div id="taxi-fair" class="font-bold text-xl text-brand-success">-- EGP</div>
+                            </div>
+                            <div class="flex justify-between items-center p-3 rounded-xl bg-red-50 dark:bg-red-900/20">
+                                <div>
+                                    <div class="text-xs font-bold text-red-500">Ielas Takši</div>
+                                    <div class="text-[10px] text-red-400">Maksimums</div>
+                                </div>
+                                <div id="taxi-max" class="font-bold text-xl text-red-500">-- EGP</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 space-y-2">
+                        <p><i class="fa-solid fa-circle-info mr-1"></i> <strong>Padoms:</strong> Vienmēr vienojieties par cenu PIRMS iekāpšanas ielas taksometrā.</p>
+                        <p><i class="fa-solid fa-mobile-screen mr-1"></i> Iesakām izmantot Uber vai Careem aplikācijas Hurgadā un Kairā.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUB-VIEW: TIPS -->
+            <div id="guide-sub-tips" class="guide-subview hidden absolute inset-0 bg-gray-50 dark:bg-gray-900 z-10 flex flex-col">
+                <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center gap-3">
+                    <button onclick="App.ui.closeGuideSub()" class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></button>
+                    <h3 class="font-bold text-lg dark:text-white">Baksheesh (Dzeramnauda)</h3>
+                </div>
+                <div class="p-6 flex-1 overflow-y-auto space-y-4">
+                    <div class="glass-panel p-4 rounded-xl flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                             <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center"><i class="fa-solid fa-broom"></i></div>
+                             <div>
+                                 <div class="font-bold text-gray-800 dark:text-white">Uzkopšana</div>
+                                 <div class="text-xs text-gray-400">Katru dienu</div>
+                             </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-bold text-brand-gold">50-100 EGP</div>
+                            <div class="text-[10px] text-gray-400">~1-2 €</div>
+                        </div>
+                    </div>
+                    <div class="glass-panel p-4 rounded-xl flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                             <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center"><i class="fa-solid fa-suitcase"></i></div>
+                             <div>
+                                 <div class="font-bold text-gray-800 dark:text-white">Bagāža</div>
+                                 <div class="text-xs text-gray-400">Par somu</div>
+                             </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-bold text-brand-gold">30-50 EGP</div>
+                            <div class="text-[10px] text-gray-400">~0.5-1 €</div>
+                        </div>
+                    </div>
+                    <div class="glass-panel p-4 rounded-xl flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                             <div class="w-10 h-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center"><i class="fa-solid fa-utensils"></i></div>
+                             <div>
+                                 <div class="font-bold text-gray-800 dark:text-white">Viesmīļi</div>
+                                 <div class="text-xs text-gray-400">Restorānos</div>
+                             </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-bold text-brand-gold">5 - 10 %</div>
+                            <div class="text-[10px] text-gray-400">No rēķina</div>
+                        </div>
+                    </div>
+                    <div class="glass-panel p-4 rounded-xl flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                             <div class="w-10 h-10 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center"><i class="fa-solid fa-restroom"></i></div>
+                             <div>
+                                 <div class="font-bold text-gray-800 dark:text-white">Tualetes</div>
+                                 <div class="text-xs text-gray-400">Apkopējam</div>
+                             </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-bold text-brand-gold">10-20 EGP</div>
+                            <div class="text-[10px] text-gray-400">Sīknauda</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUB-VIEW: SCAMS -->
+            <div id="guide-sub-scams" class="guide-subview hidden absolute inset-0 bg-gray-50 dark:bg-gray-900 z-10 flex flex-col">
+                <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center gap-3">
+                    <button onclick="App.ui.closeGuideSub()" class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></button>
+                    <h3 class="font-bold text-lg dark:text-white">Krāpniecības</h3>
+                </div>
+                <div class="p-5 flex-1 overflow-y-auto space-y-4">
+                    <div class="bg-red-50 dark:bg-red-900/20 p-4 rounded-2xl border border-red-100 dark:border-red-800">
+                        <h4 class="font-bold text-red-600 dark:text-red-400 mb-1">Bezmaksas Kamielis</h4>
+                        <p class="text-sm text-gray-700 dark:text-gray-300">Uzkāpt ir bez maksas, bet lai tiktu lejā, prasa lielu naudu. Nekāpiet virsū bez skaidras cenas vienošanās un samaksas avansā.</p>
+                    </div>
+                    <div class="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-2xl border border-orange-100 dark:border-orange-800">
+                        <h4 class="font-bold text-orange-600 dark:text-orange-400 mb-1">Papirusa Muzejs</h4>
+                        <p class="text-sm text-gray-700 dark:text-gray-300">Taksisti bieži ved uz "muzejiem", kas patiesībā ir veikali. Īsts papiruss neplīst locot; lētais (no banānu lapām) plīst.</p>
+                    </div>
+                    <div class="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-2xl border border-yellow-100 dark:border-yellow-800">
+                        <h4 class="font-bold text-yellow-600 dark:text-yellow-400 mb-1">Lidostas SIM Kartes</h4>
+                        <p class="text-sm text-gray-700 dark:text-gray-300">Oficiālie stendi ir OK, bet pārdevēji ārpusē bieži pārdod kartes ar mazāku datu apjomu nekā solīts. Pērciet tikai oficiālajos Orange/Vodafone stendos.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 4: SAVED ITEMS -->
+        <div id="view-saved" class="view-section hidden flex flex-col h-full p-6 animate-fade-in overflow-y-auto">
+            <div class="flex justify-between items-end mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Saglabāts</h2>
+                <span class="text-xs text-gray-400 bg-white dark:bg-gray-800 px-2 py-1 rounded-lg border dark:border-gray-700" id="saved-count">0 preces</span>
+            </div>
+            <div id="saved-list" class="space-y-3 pb-24"></div>
+        </div>
+    </main>
+
+    <!-- === OVERLAYS === -->
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="fixed top-20 left-1/2 transform -translate-x-1/2 z-[100] transition-all duration-300 opacity-0 translate-y-[-20px] pointer-events-none">
+        <div id="toast-content" class="px-6 py-3 rounded-full shadow-2xl font-bold text-sm text-white bg-gray-800 dark:bg-white dark:text-gray-900 flex items-center gap-2 border dark:border-gray-700">
+            <i id="toast-icon" class="fa-solid fa-circle-info"></i>
+            <span id="toast-msg">Paziņojums</span>
+        </div>
+    </div>
+
+    <!-- PREVIEW OVERLAY -->
+    <div id="modal-preview" class="fixed inset-0 z-50 bg-black hidden flex-col">
+        <div class="absolute top-0 w-full p-4 flex justify-between items-center z-20 bg-gradient-to-b from-black/80 to-transparent">
+            <span class="text-white/80 font-bold text-sm bg-white/10 px-3 py-1 rounded-full backdrop-blur-md border border-white/10">Priekšskatījums</span>
+            <button onclick="App.ui.closeModal('preview')" class="w-10 h-10 bg-white/20 backdrop-blur-md rounded-full text-white flex items-center justify-center hover:bg-white/30 transition">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="relative flex-1 bg-gray-900 flex items-center justify-center overflow-hidden">
+            <div id="preview-bg" class="absolute inset-0 bg-cover bg-center blur-3xl opacity-40 scale-125"></div>
+            <img id="preview-img" src="" class="relative max-w-full max-h-full z-10 shadow-2xl object-contain transition-transform duration-500">
+            
+            <!-- BLURRY GRADIENT LOADING ANIMATION -->
+            <div id="scan-overlay" class="absolute inset-0 z-50 hidden flex flex-col items-center justify-center bg-black/40 backdrop-blur-md transition-all duration-500">
+                <div class="absolute w-64 h-64 bg-brand-gold/20 rounded-full blur-3xl animate-pulse"></div>
+                <div class="relative z-10 flex flex-col items-center">
+                     <div class="relative">
+                        <i class="fa-solid fa-circle-notch fa-spin text-6xl text-brand-gold drop-shadow-lg"></i>
+                        <i class="fa-solid fa-bolt absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white/80 text-xl animate-pulse"></i>
+                     </div>
+                     <span id="scan-status-text" class="mt-6 text-white font-bold tracking-[0.2em] uppercase text-sm bg-black/20 px-4 py-1 rounded-full border border-white/10 backdrop-blur-sm">Analizē...</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="preview-actions" class="absolute bottom-0 w-full p-6 pb-10 bg-gradient-to-t from-black via-black/90 to-transparent z-20 pt-24">
+            <button onclick="App.scan.process()" class="w-full bg-white text-black py-4 rounded-2xl font-bold text-lg shadow-xl active:scale-[0.98] transition-transform flex items-center justify-center gap-2 hover:bg-gray-100">
+                <i class="fa-solid fa-magnifying-glass"></i> Pārbaudīt
+            </button>
+            <div id="scan-error" class="hidden mt-3 text-red-300 text-center text-xs font-bold bg-red-900/40 p-3 rounded-xl border border-red-500/30"></div>
+        </div>
+    </div>
+
+    <!-- RESULT OVERLAY -->
+    <div id="modal-result" class="fixed inset-0 z-40 bg-white dark:bg-gray-900 hidden flex-col animate-slide-up">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur sticky top-0 z-10">
+            <div class="flex items-center">
+                <button onclick="App.ui.closeModal('result')" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 transition">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <h3 class="font-bold text-lg ml-2 text-gray-800 dark:text-white">Rezultāts</h3>
+            </div>
+            <button onclick="App.ui.openModal('correct')" class="text-xs font-bold text-brand-accent bg-blue-50 dark:bg-blue-900/30 dark:text-blue-300 px-3 py-1.5 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/50 transition">
+                <i class="fa-solid fa-pen mr-1"></i> Labot
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-5 pb-32 bg-gray-50 dark:bg-gray-900">
+            <div class="mb-6 relative">
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest bg-white dark:bg-gray-800 px-2 py-0.5 rounded border border-gray-100 dark:border-gray-700 shadow-sm inline-block mb-2" id="res-category">Kategorija</span>
+                <h2 id="res-name" class="text-3xl font-bold text-gray-800 dark:text-white leading-tight">Produkts</h2>
+                <div id="res-insight" class="hidden mt-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-100 dark:border-blue-800/30 p-4 rounded-2xl text-sm text-blue-900 dark:text-blue-200 shadow-sm">
+                   <div class="flex items-center gap-2 mb-1.5 font-bold text-blue-700 dark:text-blue-300 text-xs uppercase tracking-wide">
+                       <i class="fa-solid fa-robot"></i> Gida Padoms
+                   </div>
+                   <p id="res-insight-text" class="leading-relaxed opacity-90 font-medium whitespace-pre-line"></p>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <div class="glass-panel p-4 rounded-2xl border border-green-100 dark:border-green-900/30 shadow-sm flex justify-between items-center relative overflow-hidden">
+                    <div class="absolute inset-y-0 left-0 w-1 bg-green-500"></div>
+                    <div class="flex gap-3 items-center">
+                        <div class="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400 w-10 h-10 rounded-full flex items-center justify-center shadow-inner"><i class="fa-solid fa-check"></i></div>
+                        <div>
+                            <div class="font-bold text-gray-800 dark:text-white">Labs Darījums</div>
+                            <div class="text-[10px] text-green-600 dark:text-green-400 font-bold uppercase">Mērķa cena</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                         <div class="font-bold text-xl text-gray-900 dark:text-white" id="price-good">--</div>
+                         <div class="text-[10px] text-gray-400" id="price-good-eur">--</div>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex justify-between items-center opacity-80">
+                    <div class="flex gap-3 items-center">
+                        <div class="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-400 w-10 h-10 rounded-full flex items-center justify-center"><i class="fa-solid fa-minus"></i></div>
+                        <div>
+                            <div class="font-bold text-gray-700 dark:text-gray-200">Tirgus Cena</div>
+                            <div class="text-[10px] text-gray-400">Tūristu cena</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                         <div class="font-bold text-lg text-gray-600 dark:text-gray-300" id="price-ok">--</div>
+                         <div class="text-[10px] text-gray-400" id="price-ok-eur">--</div>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-4 rounded-2xl border border-red-50 dark:border-red-900/30 shadow-sm flex justify-between items-center opacity-70 grayscale-[0.5]">
+                    <div class="flex gap-3 items-center">
+                        <div class="bg-red-100 dark:bg-red-900/50 text-red-500 dark:text-red-400 w-10 h-10 rounded-full flex items-center justify-center"><i class="fa-solid fa-xmark"></i></div>
+                        <div>
+                            <div class="font-bold text-gray-700 dark:text-gray-200">Pārcenots</div>
+                            <div class="text-[10px] text-red-400">Neiesakām</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                         <div class="font-bold text-lg text-gray-500 dark:text-gray-400" id="price-bad">--</div>
+                         <div class="text-[10px] text-gray-400" id="price-bad-eur">--</div>
+                    </div>
+                </div>
+
+                <div id="res-location" onclick="App.ui.openMap()" class="hidden mt-4 bg-gray-800 dark:bg-gray-700 text-white p-5 rounded-2xl shadow-lg active:scale-[0.98] transition-transform cursor-pointer relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-gradient-to-r from-gray-700 to-gray-900 dark:from-gray-600 dark:to-gray-800"></div>
+                    <div class="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="relative z-10 flex justify-between items-start">
+                        <div>
+                            <div class="flex items-center gap-2 mb-1 text-brand-gold text-xs font-bold uppercase tracking-wider">
+                                <i class="fa-solid fa-map-pin"></i> Ieteikums
+                            </div>
+                            <p id="res-loc-text" class="font-bold text-lg leading-tight">Supermarket</p>
+                        </div>
+                        <div class="bg-white/10 w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-sm"><i class="fa-solid fa-chevron-right text-xs"></i></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="res-actions" class="grid grid-cols-2 gap-3 pb-safe mt-6">
+                 <button onclick="App.ui.reset()" class="py-4 rounded-xl font-bold text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition">Skenēt Jaunu</button>
+                 <button id="btn-save" onclick="App.db.save()" class="py-4 rounded-xl font-bold text-white bg-brand-dark dark:bg-brand-gold hover:bg-black dark:hover:bg-yellow-600 transition shadow-lg flex items-center justify-center gap-2">
+                    <i class="fa-regular fa-bookmark"></i> Saglabāt
+                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- UTILITY MODALS -->
+    <div id="modal-auth" class="modal-overlay hidden fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <!-- (Auth Modal Content same as before) -->
+        <div class="glass-panel w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-slide-up relative overflow-hidden">
+            <button onclick="App.ui.closeModal('auth')" class="absolute top-4 right-4 text-gray-400 p-2"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <div class="text-center mb-6 pt-2">
+                <h3 class="text-xl font-bold text-gray-800 dark:text-white">Profils</h3>
+                <p id="auth-msg" class="text-xs text-gray-400 dark:text-gray-300 mt-1">Pieslēdzieties datu sinhronizācijai</p>
+            </div>
+            <div id="auth-form" class="space-y-3">
+                <input type="email" id="inp-email" placeholder="E-pasts" class="w-full p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 text-sm outline-none focus:border-brand-gold dark:text-white transition">
+                <input type="password" id="inp-pass" placeholder="Parole" class="w-full p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 text-sm outline-none focus:border-brand-gold dark:text-white transition">
+                <div id="auth-error" class="hidden text-[10px] text-red-500 font-bold bg-red-50 dark:bg-red-900/30 p-2 rounded"></div>
+                <div class="grid grid-cols-2 gap-2 pt-2">
+                    <button onclick="App.auth.login()" class="py-3 bg-brand-dark dark:bg-brand-gold text-white rounded-xl font-bold text-sm shadow-lg">Pieslēgties</button>
+                    <button onclick="App.auth.register()" class="py-3 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 rounded-xl font-bold text-sm hover:bg-gray-50 dark:hover:bg-gray-800">Reģistrēties</button>
+                </div>
+            </div>
+            <div id="auth-user" class="hidden text-center space-y-4">
+                <div class="w-16 h-16 bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center text-2xl mx-auto"><i class="fa-solid fa-check"></i></div>
+                <p id="auth-email-disp" class="font-bold text-gray-800 dark:text-white"></p>
+                <button onclick="App.auth.logout()" class="w-full py-3 text-red-500 bg-red-50 dark:bg-red-900/30 rounded-xl font-bold text-sm hover:bg-red-100 dark:hover:bg-red-900/50">Izrakstīties</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-settings" class="hidden fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-slide-up">
+            <h3 class="text-lg font-bold mb-4 text-gray-800 dark:text-white">Iestatījumi</h3>
+            
+            <label class="text-xs font-bold text-gray-400 uppercase block mb-2">Gemini API Atslēga</label>
+            <div class="relative mb-4">
+                <input type="password" id="inp-api-key" class="w-full p-3 pl-10 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 text-sm outline-none focus:border-brand-gold dark:text-white transition" placeholder="Gemini Key">
+                <i class="fa-solid fa-key absolute left-3 top-3.5 text-gray-400"></i>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="App.ui.closeModal('settings')" class="py-3 rounded-xl font-bold text-gray-500 bg-gray-100 dark:bg-gray-800 dark:text-gray-300 text-sm">Atcelt</button>
+                <button onclick="App.db.saveSettings()" class="py-3 rounded-xl font-bold text-white bg-brand-gold text-sm shadow-md">Saglabāt</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-detail" class="hidden fixed inset-0 z-[70] bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-md rounded-3xl p-6 shadow-2xl animate-slide-up">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h3 id="detail-title" class="text-xl font-bold text-gray-800 dark:text-white">Title</h3>
+                    <p id="detail-sub" class="text-sm text-gray-500 dark:text-gray-400">Subtitle</p>
+                </div>
+                <button onclick="App.ui.closeModal('detail')" class="bg-gray-100 dark:bg-gray-800 w-8 h-8 rounded-full flex items-center justify-center text-gray-500 dark:text-gray-300"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="detail-content" class="space-y-4 text-gray-700 dark:text-gray-300"></div>
+            <div id="detail-actions" class="mt-6 hidden grid-cols-2 gap-3">
+                <button onclick="App.ui.closeModal('detail')" class="py-3 bg-gray-100 dark:bg-gray-800 rounded-xl font-bold text-gray-600 dark:text-gray-300 text-sm">Atcelt</button>
+                <button onclick="App.scan.applyCorrection()" class="py-3 bg-brand-accent text-white rounded-xl font-bold text-sm shadow-md">Saglabāt</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-map" class="hidden fixed inset-0 z-[70] bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center">
+        <div class="glass-panel w-full max-w-md h-[85vh] sm:h-[600px] rounded-t-3xl sm:rounded-3xl flex flex-col animate-slide-up shadow-2xl overflow-hidden">
+            <div class="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-white/50 dark:bg-gray-900/50 z-10">
+                <h3 class="font-bold text-gray-800 dark:text-white"><i class="fa-solid fa-store text-brand-gold mr-2"></i>Veikali</h3>
+                <button onclick="App.ui.closeModal('map')" class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-300"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="bg-gray-100 dark:bg-gray-800 h-64 relative">
+                <iframe id="map-frame" class="w-full h-full" frameborder="0" src=""></iframe>
+            </div>
+            <div class="flex-1 p-5 overflow-y-auto bg-white/50 dark:bg-gray-900/50">
+                <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800 mb-5">
+                    <p class="text-xs font-bold text-blue-400 uppercase mb-1">AI Ieteikums</p>
+                    <p id="map-rec-text" class="text-sm font-bold text-blue-900 dark:text-blue-200"></p>
+                </div>
+                <h4 class="text-xs font-bold text-gray-400 uppercase mb-3">Populāri Lielveikali</h4>
+                <div class="space-y-2" id="store-list-static"></div>
+            </div>
+            <div class="p-4 border-t border-gray-100 dark:border-gray-700 bg-white/50 dark:bg-gray-900/50">
+                <button onclick="App.ui.openNativeMap()" class="w-full py-3 bg-gray-800 dark:bg-white text-white dark:text-gray-900 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2"><i class="fa-solid fa-diamond-turn-right"></i> Atvērt Kartē</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- === FOOTER NAV === -->
+    <nav class="glass-nav fixed bottom-0 w-full flex justify-around items-center py-2 pb-6 z-40 shadow-[0_-5px_20px_rgba(0,0,0,0.02)]">
+        <button onclick="App.ui.switchTab('scan')" class="nav-item active flex flex-col items-center w-16 gap-1" id="nav-scan">
+            <i class="fa-solid fa-camera text-xl mb-0.5"></i>
+            <span class="text-[9px] font-bold tracking-wide">Skenēt</span>
+        </button>
+        <button onclick="App.ui.switchTab('converter')" class="nav-item flex flex-col items-center w-16 gap-1" id="nav-converter">
+            <i class="fa-solid fa-calculator text-xl mb-0.5"></i>
+            <span class="text-[9px] font-bold tracking-wide">Kalk</span>
+        </button>
+        <button onclick="App.ui.switchTab('guide')" class="nav-item flex flex-col items-center w-16 gap-1" id="nav-guide">
+            <i class="fa-solid fa-book-open text-xl mb-0.5"></i>
+            <span class="text-[9px] font-bold tracking-wide">Gids</span>
+        </button>
+        <button onclick="App.ui.switchTab('saved')" class="nav-item flex flex-col items-center w-16 gap-1" id="nav-saved">
+            <i class="fa-solid fa-bookmark text-xl mb-0.5"></i>
+            <span class="text-[9px] font-bold tracking-wide">Saglabāts</span>
+        </button>
+    </nav>
+
+    <!-- === APP LOGIC === -->
+    <script type="module">
+        // --- CONFIGURATION ---
+        const CONFIG = {
+            apiKey: "", 
+            defaultModel: "gemini-3-flash-preview", 
+            rate: 55, // Fallback rate
+            firebase: {
+                apiKey: "AIzaSyD0cFQqgxN5Y3Os0Kj6RsS0c9PzYjR_Do0",
+                authDomain: "muse-b539b.firebaseapp.com",
+                projectId: "muse-b539b",
+                storageBucket: "muse-b539b.firebasestorage.app",
+                messagingSenderId: "910993541902",
+                appId: "1:910993541902:web:3dc41b1e7fedfdcdaf655f",
+                measurementId: "G-BLGW52QJZ4"
+            }
         };
 
-        const root = createRoot(document.getElementById('root'));
-        root.render(<LatviaOlympicsApp />);
+        // --- GLOBAL STATE ---
+        const State = {
+            user: null,
+            userKey: null,
+            currentResult: null,
+            savedCache: {},
+            currentHotel: 'alibaba',
+            viewSource: 'scan'
+        };
+
+        // --- MODULES ---
+        
+        const FB = (() => {
+            const { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, getFirestore, collection, addDoc, setDoc, getDoc, onSnapshot, doc, deleteDoc, serverTimestamp } = window.firebaseModules;
+            
+            const app = initializeApp(CONFIG.firebase);
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+
+            const getEffectiveUid = () => {
+                if (State.user && State.user.uid) return State.user.uid;
+                let localId = localStorage.getItem('local_guest_id');
+                if (!localId) {
+                    localId = 'guest_' + Math.random().toString(36).substr(2, 9);
+                    localStorage.setItem('local_guest_id', localId);
+                }
+                return localId;
+            };
+
+            const init = () => {
+                listenSaved(); 
+                onAuthStateChanged(auth, async (u) => {
+                    State.user = u;
+                    App.ui.updateAuthStatus(u);
+                    if (u) {
+                        loadSettings();
+                        listenSaved();
+                    } else {
+                        signInAnonymously(auth).catch(e => console.warn("Guest Auth:", e));
+                    }
+                });
+            };
+
+            const loadSettings = async () => {
+                const uid = getEffectiveUid();
+                try {
+                    const snap = await getDoc(doc(db, 'users', uid, 'config', 'settings'));
+                    if (snap.exists()) {
+                        const data = snap.data();
+                        State.userKey = data.key;
+                    }
+                } catch(e) { console.warn("Settings load fail", e); }
+            };
+
+            const saveSettings = async (key) => {
+                const uid = getEffectiveUid();
+                try {
+                    await setDoc(doc(db, 'users', uid, 'config', 'settings'), { key }, { merge: true });
+                    State.userKey = key;
+                    return true;
+                } catch(e) {
+                    App.ui.showToast('Kļūda saglabājot: ' + e.message, 'error');
+                    throw e;
+                }
+            };
+
+            const saveItem = async (data) => {
+                const uid = getEffectiveUid();
+                try {
+                    await addDoc(collection(db, 'users', uid, 'saved_items'), { ...data, timestamp: serverTimestamp() });
+                } catch(e) {
+                    console.error(e);
+                    // Fallback to local storage if Firebase fails
+                    try {
+                        const local = JSON.parse(localStorage.getItem('cached_saved_items') || '[]');
+                        local.unshift({ id: 'loc_'+Date.now(), ...data, timestamp: { seconds: Date.now()/1000 } });
+                        localStorage.setItem('cached_saved_items', JSON.stringify(local));
+                        // Trigger UI update manually since snapshot won't fire
+                        if(!State.user) App.ui.renderSaved(local);
+                    } catch(err) { throw e; }
+                }
+            };
+
+            const deleteItem = async (id) => {
+                if(id.startsWith('loc_')) {
+                    const local = JSON.parse(localStorage.getItem('cached_saved_items') || '[]');
+                    const filtered = local.filter(x => x.id !== id);
+                    localStorage.setItem('cached_saved_items', JSON.stringify(filtered));
+                    App.ui.renderSaved(filtered);
+                    return;
+                }
+                const uid = getEffectiveUid();
+                try { await deleteDoc(doc(db, 'users', uid, 'saved_items', id)); } catch(e) { App.ui.showToast('Kļūda dzēšot', 'error'); }
+            };
+
+            let unsubscribeSaved = null;
+            const listenSaved = () => {
+                if (unsubscribeSaved) unsubscribeSaved();
+                
+                // Load local cache first for offline support
+                const localData = JSON.parse(localStorage.getItem('cached_saved_items') || '[]');
+                State.savedCache = {};
+                localData.forEach(item => State.savedCache[item.id] = item);
+                App.ui.renderSaved(localData);
+
+                const uid = getEffectiveUid();
+                unsubscribeSaved = onSnapshot(collection(db, 'users', uid, 'saved_items'), (snap) => {
+                    State.savedCache = {}; // Reset cache to mix both or just use FB
+                    const list = [];
+                    snap.forEach(d => {
+                        const item = { id: d.id, ...d.data() };
+                        State.savedCache[d.id] = item;
+                        list.push(item);
+                    });
+                    // Merge local items if needed, or just overwrite. For simplicity, we overwrite with cloud data if available + keep strictly local items if offline
+                    localStorage.setItem('cached_saved_items', JSON.stringify(list)); // Cache for next offline run
+                    list.sort((a,b) => (b.timestamp?.seconds||0) - (a.timestamp?.seconds||0));
+                    App.ui.renderSaved(list);
+                }, (error) => {
+                    console.warn("Offline mode active");
+                });
+            };
+
+            return { auth, db, init, signInAnonymously, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, saveSettings, saveItem, deleteItem };
+        })();
+
+        const Scanner = (() => {
+            let currentImgBase64 = null;
+
+            const handleFile = (input) => {
+                if (input.files && input.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        currentImgBase64 = e.target.result.split(',')[1];
+                        document.getElementById('preview-img').src = e.target.result;
+                        document.getElementById('preview-bg').style.backgroundImage = `url(${e.target.result})`;
+                        App.ui.openModal('preview');
+                    };
+                    reader.readAsDataURL(input.files[0]);
+                    input.value = ''; 
+                }
+            };
+
+            const process = async () => {
+                const key = State.userKey || CONFIG.firebase.apiKey; 
+                
+                if (!key) {
+                    App.ui.closeModal('preview');
+                    App.ui.showToast('Nepieciešama API atslēga!', 'info');
+                    setTimeout(() => App.ui.openModal('settings'), 500);
+                    return;
+                }
+
+                App.ui.setScanLoading(true);
+                
+                // Simplified Prompt: Purely for Product ID
+                let prompt = `Identify product commercial details. Context: Egypt. Respond in Latvian. JSON: { "name": "Name (LV)", "category": "Category (LV)", "average_price_egp": "Numeric Price", "market_insight": "Short insight in LV", "where_to_buy": "Store Type (LV)", "map_query": "Map Query" }. If unknown, name="Nezināms".`;
+
+                try {
+                    const req = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${CONFIG.defaultModel}:generateContent?key=${key}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ role: "user", parts: [{ text: prompt }, { inlineData: { mimeType: "image/jpeg", data: currentImgBase64 } }] }],
+                            generationConfig: { responseMimeType: "application/json" }
+                        })
+                    });
+                    
+                    const res = await req.json();
+                    if (!req.ok) throw new Error(res.error?.message || "API Kļūda");
+                    
+                    const json = JSON.parse(res.candidates[0].content.parts[0].text);
+                    const base = parseFloat(json.average_price_egp) || 0;
+                    
+                    const result = {
+                        name: json.name || "Nezināma Prece",
+                        category: json.category || "Vispārīgs",
+                        good_deal_egp: Math.floor(base * 0.85),
+                        okay_deal_egp: Math.floor(base),
+                        overpriced_egp: Math.ceil(base * 1.25),
+                        insight: json.market_insight || null,
+                        where_to_buy: json.where_to_buy || "Lielveikals",
+                        map_query: json.map_query || "Supermarket Hurghada"
+                    };
+
+                    State.currentResult = result;
+                    State.viewSource = 'scan';
+                    App.ui.renderResult(result);
+                    App.ui.closeModal('preview');
+                    App.ui.openModal('result');
+
+                } catch (e) {
+                    console.error(e);
+                    let msg = e.message;
+                    if (msg.includes("API has not been used")) {
+                        msg = "Lūdzu iespējojiet Generative Language API Google Console projektā.";
+                    }
+                    App.ui.showScanError(msg);
+                } finally {
+                    App.ui.setScanLoading(false);
+                }
+            };
+
+            const applyCorrection = () => {
+                const name = document.getElementById('inp-edit-name').value;
+                const cat = document.getElementById('inp-edit-cat').value;
+                const price = parseFloat(document.getElementById('inp-edit-price').value);
+                
+                if (name && !isNaN(price)) {
+                    const res = { ...State.currentResult, name: name, category: cat, good_deal_egp: Math.floor(price * 0.85), okay_deal_egp: Math.floor(price), overpriced_egp: Math.ceil(price * 1.25) };
+                    State.currentResult = res;
+                    App.ui.renderResult(res);
+                    App.ui.closeModal('detail'); 
+                }
+            };
+
+            return { handleFile, process, applyCorrection };
+        })();
+
+        const Hotels = (() => {
+            const db = {
+                "alibaba": { name: "Ali Baba Palace", loc: "Hurgada", stars: "4★ Deluxe", features: [ {i:"fa-bowling-ball", c:"text-purple-500", t:"Boulings"}, {i:"fa-snowflake", c:"text-blue-400", t:"Ledus Halle"}, {i:"fa-water-ladder", c:"text-cyan-500", t:"Akvaparks"} ], dining: [ { t:"Brokastis", time:"07:00-10:00", loc:"Galvenā Zāle", desc:"Omlešu stacija, pankūkas, ēģiptiešu falafels." }, { t:"Pusdienas", time:"12:30-14:30", loc:"Vairākas vietas", desc:"Grilēta gaļa, zivis, pastas stacija." }, { t:"Vakariņas", time:"18:00-21:00", loc:"Tematiskās", desc:"Austrumu, Itāļu, Jūras velšu vakari." } ], venues: ["Galvenā Bufete", "Itāļu A La Carte", "Austrumu Telts", "Suši Bārs ($)"] },
+                "dana": { name: "Dana Beach Resort", loc: "Hurgada", stars: "5★", features: [ {i:"fa-ship", c:"text-blue-600", t:"Laivas"}, {i:"fa-coffee", c:"text-orange-500", t:"Vācu Kafe"}, {i:"fa-umbrella-beach", c:"text-yellow-500", t:"Pludmale"} ], dining: [ { t:"Brokastis", time:"07:00-10:00", loc:"Le Marche", desc:"Slavena maizes ceptuve, vācu desas." }, { t:"Pusdienas", time:"12:30-14:30", loc:"Castello", desc:"Itāļu picas no krāsns, pastas." }, { t:"Vakariņas", time:"18:30-21:30", loc:"Zum Kaiser", desc:"Vācu virtuve (šnicele), Āzijas restorāns." } ], venues: ["Le Marche", "Castello (Itāļu)", "Zum Kaiser (Vācu)", "Āzijas"] },
+                "aladdin": { name: "Aladdin Beach", loc: "Hurgada", stars: "4★", features: [{i:"fa-tree",c:"text-green-500",t:"Dārzi"},{i:"fa-martini-glass",c:"text-pink-500",t:"Bārs"},{i:"fa-person-swimming",c:"text-blue-400",t:"Baseins"}], dining: [{t:"Brokastis",time:"07-10",loc:"Agrabah",desc:"Standarta bufete."},{t:"Pusdienas",time:"12-14",loc:"Pludmale",desc:"Burgeri, frī."},{t:"Vakariņas",time:"18-21",loc:"Agrabah",desc:"Starptautiskā bufete."}], venues: ["Agrabah", "Pludmales Restorāns"] },
+                "desertrose": { name: "Desert Rose", loc: "Hurgada", stars: "5★", features: [{i:"fa-medal",c:"text-yellow-600",t:"Olimp. Baseins"},{i:"fa-water",c:"text-blue-500",t:"Lagūna"},{i:"fa-champagne-glasses",c:"text-purple-500",t:"Klubs"}], dining: [{t:"Brokastis",time:"07-10",loc:"The Palm",desc:"Plaša izvēle."},{t:"Pusdienas",time:"13-15",loc:"The Palm",desc:"Bufete."},{t:"Vakariņas",time:"18-21",loc:"A La Carte",desc:"Meksikāņu, Itāļu, Zivju."}], venues: ["The Palm", "Meksikāņu", "Itāļu", "Zivju"] },
+                "steigenberger": { name: "Steigenberger Al Dau", loc: "Hurgada", stars: "5★ Lux", features: [{i:"fa-golf-ball-tee",c:"text-green-600",t:"Golfs"},{i:"fa-water",c:"text-cyan-600",t:"Upe"},{i:"fa-spa",c:"text-pink-400",t:"SPA"}], dining: [{t:"Brokastis",time:"07-10",loc:"Tamarind",desc:"Luksusa bufete."},{t:"Pusdienas",time:"13-15",loc:"Tamarind",desc:"Dzīvās stacijas."},{t:"Vakariņas",time:"18-22",loc:"Tamarind",desc:"Gardēžu tēmas."}], venues: ["Tamarind", "Franču", "Āzijas"] },
+                "rixos": { name: "Rixos Premium", loc: "Šarm eš Šeiha", stars: "5★ Ultra", features: [{i:"fa-gem",c:"text-purple-600",t:"Ultra"},{i:"fa-fish",c:"text-blue-500",t:"Rifs"},{i:"fa-wine-glass",c:"text-orange-500",t:"Prem. Alk."}], dining: [{t:"Brokastis",time:"07-11",loc:"Turquoise",desc:"Turku delikateses."},{t:"Pusdienas",time:"12-14",loc:"Food Court",desc:"Pasaules virtuve."},{t:"Vakariņas",time:"19-21",loc:"A La Carte",desc:"Brazīliešu, Franču, u.c."}], venues: ["Turquoise", "Itāļu", "Ķīniešu", "Jūras Veltes"] }
+            };
+            return { db };
+        })();
+
+        const Guide = (() => {
+            const calcTaxi = () => {
+                const km = parseFloat(document.getElementById('taxi-km').value) || 0;
+                if(km <= 0) {
+                    document.getElementById('taxi-fair').innerText = "-- EGP";
+                    document.getElementById('taxi-max').innerText = "-- EGP";
+                    return;
+                }
+                
+                // Hurghada 2025 Estimations: Base ~25, KM ~12-15
+                const fair = 25 + (km * 12);
+                const street = 40 + (km * 20); // Tourist gouge price
+
+                document.getElementById('taxi-fair').innerText = `~${Math.floor(fair)} EGP`;
+                document.getElementById('taxi-max').innerText = `~${Math.floor(street)} EGP`;
+            };
+
+            return { calcTaxi };
+        })();
+
+        const UI = (() => {
+            const switchTab = (id) => {
+                document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+                document.getElementById(`view-${id}`).classList.remove('hidden');
+                document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active', 'text-brand-gold'));
+                const nav = document.getElementById(`nav-${id}`);
+                if(nav) nav.classList.add('active', 'text-brand-gold');
+            };
+
+            const openGuideSub = (id) => {
+                document.querySelectorAll('.guide-subview').forEach(el => el.classList.add('hidden'));
+                document.getElementById(`guide-sub-${id}`).classList.remove('hidden');
+            };
+
+            const closeGuideSub = () => {
+                document.querySelectorAll('.guide-subview').forEach(el => el.classList.add('hidden'));
+            };
+
+            const openModal = (id) => {
+                document.getElementById(`modal-${id}`).classList.remove('hidden');
+                document.getElementById(`modal-${id}`).classList.add('flex');
+            };
+
+            const closeModal = (id) => {
+                document.getElementById(`modal-${id}`).classList.add('hidden');
+                document.getElementById(`modal-${id}`).classList.remove('flex');
+            };
+
+            const toggleTheme = () => {
+                document.documentElement.classList.toggle('dark');
+            };
+
+            const showToast = (msg, type='info') => {
+                const toast = document.getElementById('toast');
+                const content = document.getElementById('toast-content');
+                document.getElementById('toast-msg').innerText = msg;
+                content.className = `px-6 py-3 rounded-full shadow-2xl font-bold text-sm text-white flex items-center gap-2 border dark:border-gray-700 ${type === 'error' ? 'bg-red-500' : 'bg-gray-800'}`;
+                toast.classList.remove('translate-y-[-20px]', 'opacity-0');
+                setTimeout(() => toast.classList.add('translate-y-[-20px]', 'opacity-0'), 4000);
+            };
+
+            const updateAuthStatus = (u) => {
+                const dot = document.getElementById('authStatusDot');
+                const userDiv = document.getElementById('auth-user');
+                const formDiv = document.getElementById('auth-form');
+                const msg = document.getElementById('auth-msg');
+
+                if (u && !u.isAnonymous) {
+                    dot.className = "absolute top-0 right-0 w-2.5 h-2.5 bg-brand-success border-2 border-white rounded-full";
+                    formDiv.classList.add('hidden');
+                    userDiv.classList.remove('hidden');
+                    userDiv.classList.add('flex', 'flex-col');
+                    document.getElementById('auth-email-disp').innerText = u.email;
+                    msg.innerText = "Jūs esat pieslēdzies.";
+                } else {
+                    dot.className = "absolute top-0 right-0 w-2.5 h-2.5 bg-brand-warning border-2 border-white rounded-full";
+                    formDiv.classList.remove('hidden');
+                    userDiv.classList.add('hidden');
+                    userDiv.classList.remove('flex');
+                    msg.innerText = "Pieslēdzieties datu sinhronizācijai";
+                }
+            };
+
+            const renderSaved = (list) => {
+                const el = document.getElementById('saved-list');
+                document.getElementById('saved-count').innerText = `${list.length} preces`;
+                if(list.length === 0) {
+                    el.innerHTML = `<div class="text-center py-10 opacity-50"><i class="fa-regular fa-folder-open text-4xl mb-2 text-gray-400 dark:text-gray-600"></i><p class="text-gray-400 dark:text-gray-600 mt-2">Tukšs</p></div>`;
+                    return;
+                }
+                el.innerHTML = list.map(i => `
+                    <div onclick="App.ui.showSavedDetail('${i.id}')" class="glass-panel p-4 rounded-2xl shadow-sm flex justify-between items-center cursor-pointer active:scale-[0.98] transition">
+                        <div>
+                            <div class="font-bold text-gray-800 dark:text-gray-200">${i.name}</div>
+                            <div class="text-xs text-gray-400">${i.category}</div>
+                            <div class="mt-1 text-xs font-bold text-brand-success">${i.good_deal_egp} EGP</div>
+                        </div>
+                        <button onclick="event.stopPropagation(); App.db.deleteItem('${i.id}')" class="w-8 h-8 rounded-full bg-red-50 dark:bg-red-900/20 text-red-400 flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-900/40"><i class="fa-solid fa-trash text-xs"></i></button>
+                    </div>
+                `).join('');
+            };
+
+            const showSavedDetail = (id) => {
+                const item = State.savedCache[id];
+                if(item) {
+                    State.currentResult = item;
+                    State.viewSource = 'saved';
+                    renderResult(item);
+                    openModal('result');
+                }
+            };
+
+            const renderResult = (d) => {
+                document.getElementById('res-name').innerText = d.name;
+                document.getElementById('res-category').innerText = d.category;
+                const eur = (p) => `≈ €${(p/CONFIG.rate).toFixed(2)}`;
+                document.getElementById('price-good').innerText = `${d.good_deal_egp} EGP`;
+                document.getElementById('price-good-eur').innerText = eur(d.good_deal_egp);
+                document.getElementById('price-ok').innerText = `${d.okay_deal_egp} EGP`;
+                document.getElementById('price-ok-eur').innerText = eur(d.okay_deal_egp);
+                document.getElementById('price-bad').innerText = `${d.overpriced_egp} EGP`;
+                document.getElementById('price-bad-eur').innerText = eur(d.overpriced_egp);
+
+                if(d.insight) {
+                    document.getElementById('res-insight-text').innerText = d.insight;
+                    document.getElementById('res-insight').classList.remove('hidden');
+                } else {
+                    document.getElementById('res-insight').classList.add('hidden');
+                }
+
+                document.getElementById('res-loc-text').innerText = d.where_to_buy || "Lielveikals";
+                document.getElementById('res-location').classList.remove('hidden');
+
+                const actions = document.getElementById('res-actions');
+                const deepBtn = document.getElementById('deep-scan-cta');
+                
+                if (State.viewSource === 'saved') {
+                    actions.classList.add('hidden');
+                    if (deepBtn) deepBtn.classList.add('hidden');
+                } else {
+                    actions.classList.remove('hidden');
+                    actions.classList.add('grid');
+                    if (deepBtn) deepBtn.classList.remove('hidden');
+                    const saveBtn = document.getElementById('btn-save');
+                    saveBtn.innerHTML = '<i class="fa-regular fa-bookmark"></i> Saglabāt';
+                    saveBtn.disabled = false;
+                    saveBtn.className = "py-4 rounded-xl font-bold text-white bg-brand-dark dark:bg-brand-gold hover:bg-black dark:hover:bg-yellow-600 transition shadow-lg flex items-center justify-center gap-2";
+                }
+            };
+
+            const setScanLoading = (loading) => {
+                const overlay = document.getElementById('scan-overlay');
+                const actions = document.getElementById('preview-actions');
+                const status = document.getElementById('scan-status-text');
+                const err = document.getElementById('scan-error');
+                if (loading) {
+                    overlay.classList.remove('hidden');
+                    actions.classList.add('hidden');
+                    err.classList.add('hidden');
+                    status.innerText = "Identificē...";
+                } else {
+                    overlay.classList.add('hidden');
+                    actions.classList.remove('hidden');
+                }
+            };
+
+            const showScanError = (msg) => {
+                const err = document.getElementById('scan-error');
+                err.innerText = msg;
+                err.classList.remove('hidden');
+            };
+
+            const reset = () => { closeModal('result'); closeModal('preview'); };
+
+            const renderHotel = (id) => {
+                const d = Hotels.db[id];
+                if (!d) return;
+                document.getElementById('hotel-name').innerText = d.name;
+                document.getElementById('hotel-loc').innerHTML = `<i class="fa-solid fa-location-dot mr-1"></i> ${d.loc}`;
+                document.getElementById('hotel-stars').innerText = d.stars;
+                document.getElementById('hotel-features').innerHTML = d.features.map(f => `
+                    <div class="glass-panel p-3 rounded-2xl border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center text-center shadow-sm h-20">
+                        <i class="fa-solid ${f.i} ${f.c} text-xl mb-1"></i>
+                        <span class="text-[9px] font-bold text-gray-700 dark:text-gray-300 leading-tight">${f.t}</span>
+                    </div>`).join('');
+                document.getElementById('hotel-dining').innerHTML = d.dining.map((m, idx) => `
+                    <div onclick="App.ui.openDetailModal('dining', ${idx})" class="flex items-center p-3 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-brand-gold bg-white/50 dark:bg-gray-800/50 transition cursor-pointer active:scale-[0.99]">
+                        <div class="w-10 h-10 rounded-full ${idx===0?'bg-yellow-100 text-yellow-600':(idx===1?'bg-orange-100 text-orange-600':'bg-indigo-100 text-indigo-600')} flex items-center justify-center font-bold text-[10px] shrink-0 mr-3">${m.time.split('-')[0]}</div>
+                        <div class="flex-1 min-w-0">
+                            <div class="font-bold text-sm text-gray-800 dark:text-gray-200">${m.t}</div>
+                            <div class="text-[10px] text-gray-400 truncate">${m.time} • ${m.loc}</div>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-xs text-gray-300"></i>
+                    </div>`).join('');
+                document.getElementById('hotel-venues').innerHTML = d.venues.map(v => `<li class="flex items-start"><i class="fa-solid fa-check text-green-500 mt-1 mr-2 text-xs"></i> <span>${v}</span></li>`).join('');
+            };
+
+            const openDetailModal = (type, idx) => {
+                const d = Hotels.db[State.currentHotel].dining[idx];
+                document.getElementById('detail-title').innerText = d.t;
+                document.getElementById('detail-sub').innerText = `${d.time} • ${d.loc}`;
+                document.getElementById('detail-content').innerHTML = `<div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-300 leading-relaxed font-medium">${d.desc}</div>`;
+                document.getElementById('detail-actions').classList.add('hidden');
+                openModal('detail');
+            };
+
+            const openModalForCorrection = () => {
+                document.getElementById('detail-title').innerText = "Labot Datus";
+                document.getElementById('detail-sub').innerText = "Rediģēt analīzes rezultātus";
+                document.getElementById('detail-content').innerHTML = `
+                    <div class="space-y-3">
+                        <input id="inp-edit-name" value="${State.currentResult.name}" class="w-full p-3 bg-gray-50 dark:bg-gray-800 border dark:border-gray-600 rounded-xl outline-none focus:border-brand-gold font-bold dark:text-white">
+                        <input id="inp-edit-cat" value="${State.currentResult.category}" class="w-full p-3 bg-gray-50 dark:bg-gray-800 border dark:border-gray-600 rounded-xl outline-none focus:border-brand-gold text-sm dark:text-white">
+                        <div class="relative">
+                            <input type="number" id="inp-edit-price" value="${State.currentResult.okay_deal_egp}" class="w-full p-3 bg-gray-50 dark:bg-gray-800 border dark:border-gray-600 rounded-xl outline-none focus:border-brand-gold font-bold dark:text-white">
+                            <span class="absolute right-4 top-3.5 text-xs text-gray-400 font-bold">EGP</span>
+                        </div>
+                        <p class="text-[10px] text-gray-400 text-center">Cenu diapazoni tiks pārrēķināti automātiski.</p>
+                    </div>`;
+                document.getElementById('detail-actions').classList.remove('hidden');
+                document.getElementById('detail-actions').classList.add('grid');
+                openModal('detail');
+            };
+
+            const openMap = () => {
+                const q = State.currentResult.map_query || "Supermarket Hurghada";
+                document.getElementById('map-frame').src = `https://maps.google.com/maps?q=${encodeURIComponent(q)}&t=&z=13&ie=UTF8&iwloc=&output=embed`;
+                document.getElementById('map-rec-text').innerText = State.currentResult.where_to_buy || "Lielveikals";
+                document.getElementById('store-list-static').innerHTML = `
+                    <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
+                        <div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center font-bold">C</div><div><div class="text-xs font-bold text-gray-800 dark:text-gray-200">Carrefour</div><div class="text-[9px] text-gray-400">City Center</div></div></div>
+                        <span class="text-[9px] bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-400 px-2 py-0.5 rounded font-bold">Izvēle</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-gray-100 dark:border-gray-700">
+                        <div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 flex items-center justify-center font-bold">G</div><div><div class="text-xs font-bold text-gray-800 dark:text-gray-200">Gomla Market</div><div class="text-[9px] text-gray-400">Sheraton Rd</div></div></div>
+                        <span class="text-[9px] bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded font-bold">Cena</span>
+                    </div>`;
+                openModal('map');
+            };
+
+            const openNativeMap = () => {
+                const q = State.currentResult.map_query || "Supermarket Hurghada";
+                window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`, '_blank');
+            };
+
+            return { 
+                switchTab, openModal, closeModal, updateAuthStatus, toggleTheme, showToast,
+                renderSaved, showSavedDetail, renderResult, 
+                setScanLoading, showScanError, reset,
+                renderHotel, openDetailModal, openModalForCorrection,
+                openMap, openNativeMap, openGuideSub, closeGuideSub
+            };
+        })();
+
+        const Tools = (() => {
+            const convert = (source) => {
+                const eurEl = document.getElementById('inp-eur');
+                const egpEl = document.getElementById('inp-egp');
+                const discEl = document.getElementById('inp-disc');
+                let eur = parseFloat(eurEl.value) || 0;
+                let egp = parseFloat(egpEl.value) || 0;
+                let disc = parseFloat(discEl.value) || 0;
+                if (source === 'eur') egp = eur * CONFIG.rate;
+                else if (source === 'egp') eur = egp / CONFIG.rate;
+                if (source !== 'eur') eurEl.value = eur.toFixed(2);
+                if (source !== 'egp') egpEl.value = egp.toFixed(2);
+                const resDiv = document.getElementById('res-discount');
+                if (disc > 0) {
+                    resDiv.classList.remove('hidden');
+                    const fEur = eur * (1 - disc/100);
+                    const fEgp = egp * (1 - disc/100);
+                    const saved = egp - fEgp;
+                    document.getElementById('out-final-eur').innerText = `€${fEur.toFixed(2)}`;
+                    document.getElementById('out-final-egp').innerText = `${fEgp.toFixed(0)} EGP`;
+                    document.getElementById('out-saved').innerText = `Ietaupīts: ${saved.toFixed(0)} EGP`;
+                } else {
+                    resDiv.classList.add('hidden');
+                }
+            };
+            return { convert };
+        })();
+
+        window.App = {
+            fb: FB,
+            scan: Scanner,
+            hotels: {
+                load: (id) => { State.currentHotel = id; UI.renderHotel(id); }
+            },
+            auth: {
+                login: async () => {
+                    const e = document.getElementById('inp-email').value.trim();
+                    const p = document.getElementById('inp-pass').value;
+                    try { await FB.signInWithEmailAndPassword(FB.auth, e, p); UI.closeModal('auth'); }
+                    catch(err) { document.getElementById('auth-error').innerText = err.message; document.getElementById('auth-error').classList.remove('hidden'); }
+                },
+                register: async () => {
+                    const e = document.getElementById('inp-email').value.trim();
+                    const p = document.getElementById('inp-pass').value;
+                    try { await FB.createUserWithEmailAndPassword(FB.auth, e, p); UI.closeModal('auth'); }
+                    catch(err) { document.getElementById('auth-error').innerText = err.message; document.getElementById('auth-error').classList.remove('hidden'); }
+                },
+                logout: async () => {
+                    await FB.signOut(FB.auth);
+                    UI.closeModal('auth');
+                }
+            },
+            db: {
+                saveSettings: async () => {
+                    const key = document.getElementById('inp-api-key').value.trim();
+                    const success = await FB.saveSettings(key);
+                    if (success) UI.closeModal('settings');
+                },
+                save: async () => {
+                    const btn = document.getElementById('btn-save');
+                    const originalContent = btn.innerHTML;
+                    const originalClasses = btn.className;
+                    btn.disabled = true;
+                    btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin text-lg"></i> <span class="ml-2">Saglabā...</span>`;
+                    btn.classList.add('opacity-90', 'cursor-wait');
+                    try {
+                        await FB.saveItem(State.currentResult);
+                        btn.classList.remove('bg-brand-dark', 'dark:bg-brand-gold', 'hover:bg-black', 'dark:hover:bg-yellow-600');
+                        btn.classList.add('bg-green-500', 'dark:bg-green-600', 'text-white', 'scale-105', 'shadow-green-200');
+                        btn.innerHTML = `<i class="fa-solid fa-check fa-bounce"></i> <span class="ml-2">Saglabāts!</span>`;
+                        setTimeout(() => {
+                            App.ui.closeModal('result');
+                            setTimeout(() => {
+                                btn.className = originalClasses;
+                                btn.innerHTML = originalContent;
+                                btn.disabled = false;
+                            }, 500);
+                        }, 1500);
+                    } catch(e) {
+                        btn.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> <span class="ml-2">Kļūda!</span>`;
+                        btn.classList.add('bg-red-500', 'text-white');
+                        setTimeout(() => {
+                            btn.className = originalClasses;
+                            btn.innerHTML = originalContent;
+                            btn.disabled = false;
+                        }, 2000);
+                    }
+                },
+                deleteItem: FB.deleteItem
+            },
+            ui: UI,
+            tools: Tools,
+            guide: Guide
+        };
+
+        // Init Sequence
+        FB.init();
+        App.hotels.load('alibaba');
+        const sel = document.getElementById('hotel-selector');
+        sel.innerHTML = Object.entries(Hotels.db).map(([k,v]) => `<option value="${k}">${v.name} (${v.loc})</option>`).join('');
+
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+
+        // Live Currency Fetch
+        fetch('https://api.exchangerate-api.com/v4/latest/EUR')
+            .then(res => res.json())
+            .then(data => {
+                if(data.rates.EGP) {
+                    CONFIG.rate = data.rates.EGP;
+                    document.getElementById('live-rate-badge').innerText = `1€ ≈ ${Math.floor(CONFIG.rate)} EGP`;
+                    // Refresh calculator if open
+                    App.tools.convert('eur');
+                }
+            }).catch(e => console.warn("Rate fetch failed, using fallback"));
+
     </script>
 </body>
 </html>
-
