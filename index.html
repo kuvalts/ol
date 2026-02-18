@@ -2,7 +2,7 @@
 <html lang="lv" class="antialiased">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Ēģiptes Cenu Ceļvedis</title>
     
     <!-- Tailwind CSS -->
@@ -66,6 +66,7 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .hidden-input { opacity: 0; position: absolute; pointer-events: none; }
         .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
+        .pt-safe { padding-top: env(safe-area-inset-top, 20px); }
         
         /* Glassmorphism */
         .glass-panel {
@@ -105,7 +106,7 @@
     </div>
 
     <!-- === HEADER === -->
-    <header class="glass-nav shadow-sm px-5 py-3 flex items-center justify-between z-30 shrink-0 relative transition-colors duration-300">
+    <header class="glass-nav shadow-sm px-5 py-3 flex items-center justify-between z-30 shrink-0 relative transition-colors duration-300 pt-safe">
         <div class="flex items-center gap-3">
             <div class="bg-brand-dark dark:bg-brand-gold text-white w-9 h-9 rounded-xl flex items-center justify-center font-bold text-lg shadow-md bg-gradient-to-br from-gray-800 to-black dark:from-yellow-600 dark:to-yellow-800 transition-colors">Ē</div>
             <div>
@@ -132,22 +133,22 @@
         
         <!-- VIEW 1: SCAN -->
         <div id="view-scan" class="view-section flex flex-col h-full p-6 animate-fade-in overflow-y-auto">
-            <div class="text-center mt-4 mb-8">
-                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Cenu Pārbaude</h2>
-                <p class="text-sm text-gray-400 dark:text-gray-300">Izmantojiet kameru produktu cenu analīzei</p>
+            <div class="text-center mt-6 mb-10">
+                <h2 class="text-3xl font-bold text-gray-800 dark:text-white">Cenu Pārbaude</h2>
+                <p class="text-sm text-gray-400 dark:text-gray-300 mt-2">Skenējiet preces vai ēdienkartes</p>
             </div>
 
-            <div class="flex-1 flex flex-col gap-4 justify-center">
-                <label class="relative w-full aspect-[4/3] glass-panel rounded-3xl shadow-lg flex flex-col items-center justify-center gap-4 cursor-pointer hover:shadow-xl active:scale-[0.98] transition-all group overflow-hidden">
+            <div class="flex-1 flex flex-col gap-5 justify-start">
+                <label class="relative w-full h-48 glass-panel rounded-3xl shadow-lg flex flex-col items-center justify-center gap-3 cursor-pointer hover:shadow-xl active:scale-[0.98] transition-all group overflow-hidden border-2 border-transparent hover:border-brand-gold/20">
                     <div class="absolute inset-0 bg-gradient-to-tr from-gray-50/50 to-transparent opacity-0 group-hover:opacity-100 transition duration-500"></div>
-                    <div class="w-20 h-20 bg-brand-dark dark:bg-brand-gold text-white rounded-full flex items-center justify-center text-3xl shadow-xl group-hover:scale-110 transition duration-300 z-10 bg-gradient-to-br from-gray-700 to-black dark:from-yellow-500 dark:to-yellow-700">
+                    <div class="w-16 h-16 bg-brand-dark dark:bg-brand-gold text-white rounded-full flex items-center justify-center text-2xl shadow-xl group-hover:scale-110 transition duration-300 z-10 bg-gradient-to-br from-gray-700 to-black dark:from-yellow-500 dark:to-yellow-700">
                         <i class="fa-solid fa-camera"></i>
                     </div>
-                    <span class="font-bold text-gray-600 dark:text-gray-200 z-10">Atvērt Kameru</span>
+                    <span class="font-bold text-lg text-gray-700 dark:text-gray-200 z-10">Atvērt Kameru</span>
                     <input type="file" onchange="App.scan.handleFile(this)" accept="image/*" capture="environment" class="hidden-input">
                 </label>
 
-                <label class="w-full py-5 glass-panel border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl flex items-center justify-center gap-3 cursor-pointer hover:border-brand-gold dark:hover:border-brand-gold hover:bg-yellow-50/20 active:scale-[0.98] transition-all group">
+                <label class="w-full py-4 glass-panel border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl flex items-center justify-center gap-3 cursor-pointer hover:border-brand-gold dark:hover:border-brand-gold hover:bg-yellow-50/20 active:scale-[0.98] transition-all group">
                     <i class="fa-solid fa-images text-gray-400 group-hover:text-brand-gold transition"></i>
                     <span class="font-semibold text-gray-500 dark:text-gray-300 group-hover:text-brand-dark dark:group-hover:text-white transition">Izvēlēties no Galerijas</span>
                     <input type="file" onchange="App.scan.handleFile(this)" accept="image/*" class="hidden-input">
@@ -190,7 +191,7 @@
         <div id="view-guide" class="view-section hidden flex flex-col h-full animate-fade-in relative">
             
             <!-- MAIN MENU -->
-            <div id="guide-menu" class="p-6 h-full overflow-y-auto">
+            <div id="guide-menu" class="p-6 h-full overflow-y-auto pb-24">
                 <h2 class="text-2xl font-bold mb-6 text-gray-800 dark:text-white">Ēģiptes Gids</h2>
                 <div class="grid grid-cols-2 gap-4">
                     <!-- Hotels -->
@@ -218,16 +219,19 @@
                     </div>
 
                     <!-- Scams -->
-                    <div onclick="App.ui.openGuideSub('scams')" class="glass-panel p-4 rounded-2xl shadow-sm hover:shadow-md transition active:scale-[0.98] cursor-pointer flex flex-col items-center text-center gap-3">
-                        <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                        <h3 class="font-bold text-sm text-gray-800 dark:text-white leading-tight">Izvairies<br>Krāpniekiem</h3>
+                    <div onclick="App.ui.openGuideSub('scams')" class="col-span-2 glass-panel p-4 rounded-2xl shadow-sm hover:shadow-md transition active:scale-[0.98] cursor-pointer flex flex-row items-center gap-4">
+                        <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                        <div>
+                            <h3 class="font-bold text-sm text-gray-800 dark:text-white leading-tight">Izvairies no Krāpniekiem</h3>
+                            <p class="text-xs text-gray-400">Populārākās tūristu lamatas</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- SUB-VIEW: HOTELS -->
             <div id="guide-sub-hotels" class="guide-subview hidden absolute inset-0 bg-gray-50 dark:bg-gray-900 z-10 flex flex-col">
-                <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center gap-3">
+                <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center gap-3 pt-safe">
                     <button onclick="App.ui.closeGuideSub()" class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></button>
                     <h3 class="font-bold text-lg dark:text-white">Viesnīcas</h3>
                 </div>
@@ -260,7 +264,7 @@
 
             <!-- SUB-VIEW: TAXI -->
             <div id="guide-sub-taxi" class="guide-subview hidden absolute inset-0 bg-gray-50 dark:bg-gray-900 z-10 flex flex-col">
-                <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center gap-3">
+                <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center gap-3 pt-safe">
                     <button onclick="App.ui.closeGuideSub()" class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></button>
                     <h3 class="font-bold text-lg dark:text-white">Taxi Kalkulators</h3>
                 </div>
@@ -294,7 +298,7 @@
 
             <!-- SUB-VIEW: TIPS -->
             <div id="guide-sub-tips" class="guide-subview hidden absolute inset-0 bg-gray-50 dark:bg-gray-900 z-10 flex flex-col">
-                <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center gap-3">
+                <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center gap-3 pt-safe">
                     <button onclick="App.ui.closeGuideSub()" class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></button>
                     <h3 class="font-bold text-lg dark:text-white">Baksheesh (Dzeramnauda)</h3>
                 </div>
@@ -356,7 +360,7 @@
 
             <!-- SUB-VIEW: SCAMS -->
             <div id="guide-sub-scams" class="guide-subview hidden absolute inset-0 bg-gray-50 dark:bg-gray-900 z-10 flex flex-col">
-                <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center gap-3">
+                <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center gap-3 pt-safe">
                     <button onclick="App.ui.closeGuideSub()" class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center"><i class="fa-solid fa-arrow-left"></i></button>
                     <h3 class="font-bold text-lg dark:text-white">Krāpniecības</h3>
                 </div>
@@ -399,7 +403,7 @@
 
     <!-- PREVIEW OVERLAY -->
     <div id="modal-preview" class="fixed inset-0 z-50 bg-black hidden flex-col">
-        <div class="absolute top-0 w-full p-4 flex justify-between items-center z-20 bg-gradient-to-b from-black/80 to-transparent">
+        <div class="absolute top-0 w-full p-4 flex justify-between items-center z-20 bg-gradient-to-b from-black/80 to-transparent pt-safe">
             <span class="text-white/80 font-bold text-sm bg-white/10 px-3 py-1 rounded-full backdrop-blur-md border border-white/10">Priekšskatījums</span>
             <button onclick="App.ui.closeModal('preview')" class="w-10 h-10 bg-white/20 backdrop-blur-md rounded-full text-white flex items-center justify-center hover:bg-white/30 transition">
                 <i class="fa-solid fa-xmark"></i>
@@ -433,7 +437,7 @@
 
     <!-- RESULT OVERLAY -->
     <div id="modal-result" class="fixed inset-0 z-40 bg-white dark:bg-gray-900 hidden flex-col animate-slide-up">
-        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur sticky top-0 z-10">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur sticky top-0 z-10 pt-safe">
             <div class="flex items-center">
                 <button onclick="App.ui.closeModal('result')" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 transition">
                     <i class="fa-solid fa-arrow-left"></i>
